@@ -4,24 +4,26 @@ import SwiftUI
 struct MediaCaptureBrowserView: View {
     @EnvironmentObject private var mediaStore: MediaCaptureStore
     @EnvironmentObject private var diskMonitor: DiskSpaceMonitor
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.liquidGlassNamespace) private var glassNamespace
 
     var body: some View {
         VStack(spacing: 0) {
             header
-            Divider()
             toolbar
-            Divider()
             content
-            Divider()
             footer
         }
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background {
+            PanelGlassBackground(cornerRadius: 18)
+        }
         .overlay {
             if mediaStore.confirmDelete {
                 confirmOverlay
+                    .transition(.opacity.combined(with: .scale(scale: 0.96)))
             }
         }
-        .animation(.snappy(duration: 0.2), value: mediaStore.confirmDelete)
+        .animation(LiquidGlassMotion.overlay(reduceMotion), value: mediaStore.confirmDelete)
     }
 
     private var header: some View {
@@ -32,17 +34,18 @@ struct MediaCaptureBrowserView: View {
                 Label("Back", systemImage: "chevron.left")
                     .labelStyle(.titleAndIcon)
             }
-            .buttonStyle(.borderless)
+            .liquidPillButtonStyle()
+            .liquidGlassEffectID("media-nav", in: glassNamespace)
 
             Spacer()
 
-            VStack(spacing: 2) {
+            VStack(spacing: 3) {
                 Text("Screenshots & Recordings")
                     .font(.headline)
                 if mediaStore.totalBytes > 0 {
                     Text("Up to \(mediaStore.totalBytesLabel) reclaimable")
-                        .font(.caption.weight(.medium))
-                        .foregroundStyle(.orange)
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
                 } else {
                     Text(mediaStore.summaryLabel)
                         .font(.caption)
@@ -56,39 +59,44 @@ struct MediaCaptureBrowserView: View {
                 mediaStore.scan()
             } label: {
                 Image(systemName: "arrow.clockwise")
+                    .font(.body.weight(.semibold))
             }
-            .buttonStyle(.borderless)
+            .liquidChipButtonStyle()
             .disabled(mediaStore.isScanning || mediaStore.isDeleting)
             .help("Rescan")
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
     }
 
     private var toolbar: some View {
         HStack(spacing: 8) {
             Button("Select All") { mediaStore.selectAll() }
                 .disabled(mediaStore.items.isEmpty || mediaStore.isDeleting)
+                .liquidPillButtonStyle()
             Button("Select None") { mediaStore.selectNone() }
                 .disabled(mediaStore.selectedIDs.isEmpty || mediaStore.isDeleting)
+                .liquidPillButtonStyle()
             Button("Older than 30d") { mediaStore.selectOlderThan(days: 30) }
                 .disabled(mediaStore.items.isEmpty || mediaStore.isDeleting)
-            Spacer()
+                .liquidPillButtonStyle()
+            Spacer(minLength: 8)
             if !mediaStore.selectedIDs.isEmpty {
                 Text("Will free \(mediaStore.selectedBytesLabel)")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.orange)
                     .contentTransition(.numericText())
+                    .liquidPillLabel()
             } else if mediaStore.totalBytes > 0 {
                 Text("Select items to free up to \(mediaStore.totalBytesLabel)")
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                    .lineLimit(1)
             }
         }
-        .buttonStyle(.borderless)
-        .font(.caption)
-        .padding(.horizontal, 14)
+        .padding(.horizontal, 16)
         .padding(.vertical, 8)
+        .overlay(alignment: .bottom) {
+            Divider().opacity(0.45)
+        }
     }
 
     @ViewBuilder
@@ -122,10 +130,12 @@ struct MediaCaptureBrowserView: View {
                     ) {
                         mediaStore.toggleSelection(item.id)
                     }
-                    .listRowInsets(EdgeInsets(top: 6, leading: 10, bottom: 6, trailing: 10))
+                    .listRowInsets(EdgeInsets(top: 8, leading: 12, bottom: 8, trailing: 12))
+                    .listRowBackground(Color.clear)
                 }
             }
             .listStyle(.plain)
+            .scrollContentBackground(.hidden)
             .disabled(mediaStore.isDeleting)
         }
     }
@@ -152,18 +162,20 @@ struct MediaCaptureBrowserView: View {
             Button("Delete Selected") {
                 mediaStore.requestDeleteSelected()
             }
-            .buttonStyle(.borderedProminent)
-            .tint(.red)
+            .liquidButtonStyle(prominent: true, tint: .red)
             .disabled(mediaStore.selectedIDs.isEmpty || mediaStore.isDeleting)
-            .controlSize(.small)
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
+        .padding(.horizontal, 16)
+        .padding(.top, 10)
+        .padding(.bottom, 14)
+        .overlay(alignment: .top) {
+            Divider().opacity(0.55)
+        }
     }
 
     private var confirmOverlay: some View {
         ZStack {
-            Color.black.opacity(0.35)
+            Color.black.opacity(0.32)
                 .ignoresSafeArea()
                 .onTapGesture { mediaStore.cancelDelete() }
 
@@ -177,20 +189,19 @@ struct MediaCaptureBrowserView: View {
 
                 HStack(spacing: 10) {
                     Button("Cancel") { mediaStore.cancelDelete() }
+                        .liquidButtonStyle()
                         .frame(maxWidth: .infinity)
                     Button("Delete") {
                         mediaStore.deleteSelected(diskMonitor: diskMonitor)
                     }
-                    .buttonStyle(.borderedProminent)
-                    .tint(.red)
+                    .liquidButtonStyle(prominent: true, tint: .red)
                     .frame(maxWidth: .infinity)
                     .keyboardShortcut(.defaultAction)
                 }
             }
-            .padding(16)
+            .padding(18)
             .frame(maxWidth: 320)
-            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-            .shadow(color: .black.opacity(0.18), radius: 16, y: 6)
+            .liquidDialogSurface(tint: .red)
             .padding(20)
         }
     }
@@ -207,12 +218,13 @@ private struct MediaCaptureRow: View {
                 Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
                     .foregroundStyle(isSelected ? Color.accentColor : Color.secondary)
                     .font(.title3)
+                    .symbolEffect(.bounce, value: isSelected)
 
                 MediaThumbnailView(item: item)
                     .frame(width: 44, height: 44)
-                    .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                     .overlay(
-                        RoundedRectangle(cornerRadius: 6, style: .continuous)
+                        RoundedRectangle(cornerRadius: 8, style: .continuous)
                             .strokeBorder(Color.primary.opacity(0.08), lineWidth: 1)
                     )
 
@@ -237,6 +249,7 @@ private struct MediaCaptureRow: View {
             }
             .contentShape(Rectangle())
             .opacity(isSelected ? 1 : 0.72)
+            .animation(.spring(response: 0.28, dampingFraction: 0.85), value: isSelected)
         }
         .buttonStyle(.plain)
     }
@@ -273,6 +286,7 @@ private struct MediaThumbnailView: View {
 
 struct MediaCaptureSummaryRow: View {
     @EnvironmentObject private var mediaStore: MediaCaptureStore
+    @Environment(\.liquidGlassNamespace) private var glassNamespace
 
     var body: some View {
         Button {
@@ -288,8 +302,8 @@ struct MediaCaptureSummaryRow: View {
                             .foregroundStyle(.secondary)
                     } else if mediaStore.totalBytes > 0 {
                         Text(mediaStore.reclaimHint)
-                            .font(.caption.weight(.medium))
-                            .foregroundStyle(.orange)
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(Color.accentColor)
                         Text(mediaStore.summaryLabel)
                             .font(.caption2)
                             .foregroundStyle(.secondary)
@@ -315,14 +329,11 @@ struct MediaCaptureSummaryRow: View {
                 }
 
                 Text("Review")
-                    .font(.caption.weight(.semibold))
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(Color.accentColor.opacity(0.15), in: Capsule())
-                    .foregroundStyle(Color.accentColor)
+                    .liquidPillLabel()
+                    .liquidGlassEffectID("media-nav", in: glassNamespace)
             }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 10)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 11)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)

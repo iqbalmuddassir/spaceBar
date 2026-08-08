@@ -9,37 +9,90 @@ final class PanelSnapshotTests: XCTestCase {
     override func setUp() {
         super.setUp()
         NSApp.setActivationPolicy(.regular)
+        LiquidGlassRuntime.testOverride = nil
     }
 
-    func testCleanupPanelGood() {
-        let hosting = makeCleanupPanel(for: .good)
-        assertSnapshot(
-            of: hosting,
-            as: .image(precision: 0.98, perceptualPrecision: 0.98),
-            named: "cleanup-panel-good"
-        )
-        exportREADMESnapshot(from: hosting, named: "spacebar-panel-good")
-        exportREADMESnapshot(from: hosting, named: "spacebar-panel")
+    override func tearDown() {
+        LiquidGlassRuntime.testOverride = nil
+        super.tearDown()
     }
 
-    func testCleanupPanelLow() {
-        let hosting = makeCleanupPanel(for: .low)
-        assertSnapshot(
-            of: hosting,
-            as: .image(precision: 0.98, perceptualPrecision: 0.98),
-            named: "cleanup-panel-low"
+    func testCleanupPanelGood_macOS14() {
+        assertCleanupPanel(
+            for: .good,
+            glass: false,
+            named: "cleanup-panel-good-macos14",
+            exportDocs: true,
+            testName: #function
         )
-        exportREADMESnapshot(from: hosting, named: "spacebar-panel-low")
     }
 
-    func testCleanupPanelCritical() {
-        let hosting = makeCleanupPanel(for: .critical)
-        assertSnapshot(
-            of: hosting,
-            as: .image(precision: 0.98, perceptualPrecision: 0.98),
-            named: "cleanup-panel-critical"
+    func testCleanupPanelLow_macOS14() {
+        assertCleanupPanel(
+            for: .low,
+            glass: false,
+            named: "cleanup-panel-low-macos14",
+            exportDocs: true,
+            testName: #function
         )
-        exportREADMESnapshot(from: hosting, named: "spacebar-panel-critical")
+    }
+
+    func testCleanupPanelCritical_macOS14() {
+        assertCleanupPanel(
+            for: .critical,
+            glass: false,
+            named: "cleanup-panel-critical-macos14",
+            exportDocs: true,
+            testName: #function
+        )
+    }
+
+    func testMediaBrowser_macOS14() {
+        assertMediaBrowser(
+            glass: false,
+            named: "media-browser-macos14",
+            exportDocs: true,
+            testName: #function
+        )
+    }
+
+    func testCleanupPanelGood_macOS26() throws {
+        try requireLiquidGlassHost()
+        assertCleanupPanel(
+            for: .good,
+            glass: true,
+            named: "cleanup-panel-good-macos26",
+            testName: #function
+        )
+    }
+
+    func testCleanupPanelLow_macOS26() throws {
+        try requireLiquidGlassHost()
+        assertCleanupPanel(
+            for: .low,
+            glass: true,
+            named: "cleanup-panel-low-macos26",
+            testName: #function
+        )
+    }
+
+    func testCleanupPanelCritical_macOS26() throws {
+        try requireLiquidGlassHost()
+        assertCleanupPanel(
+            for: .critical,
+            glass: true,
+            named: "cleanup-panel-critical-macos26",
+            testName: #function
+        )
+    }
+
+    func testMediaBrowser_macOS26() throws {
+        try requireLiquidGlassHost()
+        assertMediaBrowser(
+            glass: true,
+            named: "media-browser-macos26",
+            testName: #function
+        )
     }
 
     func testMenuBarPillGood() {
@@ -49,7 +102,8 @@ final class PanelSnapshotTests: XCTestCase {
             as: .image(precision: 0.98, perceptualPrecision: 0.98),
             named: "menu-bar-pill-good"
         )
-        exportREADMESnapshot(image: image, named: "spacebar-pill-good")
+        SnapshotExport.exportREADMESnapshot(image: image, named: "spacebar-pill-good")
+        SnapshotExport.exportHiResSnapshot(image: image, named: "spacebar-pill-good")
     }
 
     func testMenuBarPillLow() {
@@ -59,7 +113,8 @@ final class PanelSnapshotTests: XCTestCase {
             as: .image(precision: 0.98, perceptualPrecision: 0.98),
             named: "menu-bar-pill-low"
         )
-        exportREADMESnapshot(image: image, named: "spacebar-pill-low")
+        SnapshotExport.exportREADMESnapshot(image: image, named: "spacebar-pill-low")
+        SnapshotExport.exportHiResSnapshot(image: image, named: "spacebar-pill-low")
     }
 
     func testMenuBarPillCritical() {
@@ -69,7 +124,61 @@ final class PanelSnapshotTests: XCTestCase {
             as: .image(precision: 0.98, perceptualPrecision: 0.98),
             named: "menu-bar-pill-critical"
         )
-        exportREADMESnapshot(image: image, named: "spacebar-pill-critical")
+        SnapshotExport.exportREADMESnapshot(image: image, named: "spacebar-pill-critical")
+        SnapshotExport.exportHiResSnapshot(image: image, named: "spacebar-pill-critical")
+    }
+
+    private func requireLiquidGlassHost() throws {
+        guard #available(macOS 26, *) else {
+            throw XCTSkip("Liquid Glass snapshots require macOS 26+")
+        }
+    }
+
+    private func assertCleanupPanel(
+        for freeSpaceCase: SnapshotFixtures.FreeSpaceCase,
+        glass: Bool,
+        named name: String,
+        exportDocs: Bool = false,
+        testName: String
+    ) {
+        LiquidGlassRuntime.withChrome(glass) {
+            let hosting = makeCleanupPanel(for: freeSpaceCase)
+            assertSnapshot(
+                of: hosting,
+                as: .image(precision: 0.98, perceptualPrecision: 0.98),
+                named: name,
+                testName: testName
+            )
+            if exportDocs {
+                let docsName = "spacebar-panel-\(freeSpaceCase.snapshotName)"
+                SnapshotExport.exportREADMESnapshot(from: hosting, named: docsName)
+                SnapshotExport.exportHiResSnapshot(from: hosting, named: docsName)
+                if freeSpaceCase == .good {
+                    SnapshotExport.exportREADMESnapshot(from: hosting, named: "spacebar-panel")
+                    SnapshotExport.exportHiResSnapshot(from: hosting, named: "spacebar-panel")
+                }
+            }
+        }
+    }
+
+    private func assertMediaBrowser(
+        glass: Bool,
+        named name: String,
+        exportDocs: Bool = false,
+        testName: String
+    ) {
+        LiquidGlassRuntime.withChrome(glass) {
+            let hosting = makeMediaBrowser()
+            assertSnapshot(
+                of: hosting,
+                as: .image(precision: 0.98, perceptualPrecision: 0.98),
+                named: name,
+                testName: testName
+            )
+            if exportDocs {
+                SnapshotExport.exportHiResSnapshot(from: hosting, named: "spacebar-media-browser")
+            }
+        }
     }
 
     private func makeCleanupPanel(for freeSpaceCase: SnapshotFixtures.FreeSpaceCase) -> NSView {
@@ -83,34 +192,20 @@ final class PanelSnapshotTests: XCTestCase {
             .environmentObject(mediaStore)
             .frame(width: SnapshotFixtures.panelSize.width, height: SnapshotFixtures.panelSize.height)
 
-        let hosting = NSHostingView(rootView: root)
-        hosting.frame = NSRect(origin: .zero, size: SnapshotFixtures.panelSize)
-        hosting.wantsLayer = true
-        hosting.layer?.cornerRadius = 10
-        hosting.layer?.masksToBounds = true
-        hosting.layoutSubtreeIfNeeded()
-        return hosting
+        return SnapshotExport.makeHostedPanel(rootView: root)
     }
 
-    private func exportREADMESnapshot(from view: NSView, named name: String) {
-        guard let rep = view.bitmapImageRepForCachingDisplay(in: view.bounds) else { return }
-        view.cacheDisplay(in: view.bounds, to: rep)
-        let image = NSImage(size: view.bounds.size)
-        image.addRepresentation(rep)
-        exportREADMESnapshot(image: image, named: name)
-    }
+    private func makeMediaBrowser() -> NSView {
+        let monitor = SnapshotFixtures.diskMonitor(for: .good)
+        let mediaStore = SnapshotFixtures.mediaStore()
+        mediaStore.showBrowser = true
+        mediaStore.selectAll()
 
-    private func exportREADMESnapshot(image: NSImage, named name: String) {
-        guard let tiff = image.tiffRepresentation,
-              let bitmap = NSBitmapImageRep(data: tiff),
-              let png = bitmap.representation(using: .png, properties: [:])
-        else { return }
+        let root = MediaCaptureBrowserView()
+            .environmentObject(monitor)
+            .environmentObject(mediaStore)
+            .frame(width: SnapshotFixtures.panelSize.width, height: SnapshotFixtures.panelSize.height)
 
-        let docs = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-            .appendingPathComponent("Docs", isDirectory: true)
-        try? FileManager.default.createDirectory(at: docs, withIntermediateDirectories: true)
-        try? png.write(to: docs.appendingPathComponent("\(name).png"))
+        return SnapshotExport.makeHostedPanel(rootView: root)
     }
 }

@@ -11,11 +11,17 @@ struct DiskSpaceBar: View {
             let barWidth = geo.size.width
             ZStack(alignment: .leading) {
                 Capsule()
-                    .fill(Color.primary.opacity(0.12))
+                    .fill(Color.primary.opacity(0.10))
                 Capsule()
-                    .fill(color)
+                    .fill(
+                        LinearGradient(
+                            colors: [color.opacity(0.85), color],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    )
                     .frame(width: max(height, barWidth * fraction))
-                    .animation(.snappy(duration: 0.35), value: fraction)
+                    .animation(.spring(response: 0.4, dampingFraction: 0.85), value: fraction)
                     .animation(.easeInOut(duration: 0.25), value: color)
             }
         }
@@ -26,6 +32,8 @@ struct DiskSpaceBar: View {
 
 struct DiskSpaceStatusCard: View {
     @ObservedObject var monitor: DiskSpaceMonitor
+
+    private let cardShape = RoundedRectangle(cornerRadius: 14, style: .continuous)
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -61,11 +69,8 @@ struct DiskSpaceStatusCard: View {
                     .foregroundStyle(.secondary)
             }
         }
-        .padding(12)
-        .background(monitor.level.color.opacity(0.08), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .strokeBorder(monitor.level.color.opacity(0.22), lineWidth: 1)
-        )
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        .liquidGlass(tint: monitor.level.color, in: cardShape)
     }
 }

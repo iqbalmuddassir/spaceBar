@@ -73,7 +73,9 @@ final class StatusItemController: NSObject, ObservableObject {
         let hosting = NSHostingController(rootView: root)
         hosting.view.frame = NSRect(x: 0, y: 0, width: 420, height: 560)
         hosting.view.wantsLayer = true
-        hosting.view.layer?.cornerRadius = 10
+        hosting.view.layer?.backgroundColor = NSColor.clear.cgColor
+        hosting.view.layer?.cornerRadius = 18
+        hosting.view.layer?.cornerCurve = .continuous
         hosting.view.layer?.masksToBounds = true
 
         let newPanel = NSPanel(

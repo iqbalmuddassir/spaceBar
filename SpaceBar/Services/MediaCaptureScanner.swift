@@ -136,12 +136,24 @@ enum MediaCaptureScanner {
         let recordingExts: Set = ["mov", "mp4", "m4v"]
         let imageExts: Set = ["png", "jpg", "jpeg", "heic"]
 
-        if lower.hasPrefix("screen recording"), recordingExts.contains(ext) {
+        if recordingExts.contains(ext), isScreenRecordingName(lower) {
             return .recording
         }
-        if lower.hasPrefix("screenshot") || lower.hasPrefix("screen shot"), imageExts.contains(ext) {
+        if imageExts.contains(ext), isScreenshotName(lower) {
             return .screenshot
         }
         return nil
+    }
+
+    private static func isScreenRecordingName(_ lower: String) -> Bool {
+        lower.hasPrefix("screen recording")
+            || lower.hasPrefix("screen_recording")
+            || lower.hasPrefix("screenrecording")
+    }
+
+    private static func isScreenshotName(_ lower: String) -> Bool {
+        lower.hasPrefix("screenshot")
+            || lower.hasPrefix("screen shot")
+            || lower.hasPrefix("screen_shot")
     }
 }

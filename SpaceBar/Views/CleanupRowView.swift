@@ -5,6 +5,8 @@ struct CleanupRowView: View {
     var isConfirming: Bool = false
     let onDelete: () -> Void
 
+    private let highlightShape = RoundedRectangle(cornerRadius: 12, style: .continuous)
+
     var body: some View {
         HStack(alignment: .center, spacing: 12) {
             VStack(alignment: .leading, spacing: 3) {
@@ -46,12 +48,18 @@ struct CleanupRowView: View {
             trailingControl
                 .frame(width: 78, alignment: .trailing)
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
-        .background(isConfirming ? Color.accentColor.opacity(0.08) : Color.clear)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 11)
+        .background {
+            if isConfirming {
+                Color.clear
+                    .liquidGlass(tint: .accentColor, in: highlightShape)
+            }
+        }
         .opacity(result.phase == .deleting ? 0.72 : 1)
-        .animation(.snappy(duration: 0.2), value: result.phase)
-        .animation(.snappy(duration: 0.2), value: result.sizeLabel)
+        .animation(.spring(response: 0.3, dampingFraction: 0.85), value: result.phase)
+        .animation(.spring(response: 0.3, dampingFraction: 0.85), value: result.sizeLabel)
+        .animation(.spring(response: 0.3, dampingFraction: 0.85), value: isConfirming)
     }
 
     private var isCommandBased: Bool {
@@ -80,9 +88,9 @@ struct CleanupRowView: View {
             Button(result.target.isPermanent ? "Empty" : "Clean") {
                 onDelete()
             }
-            .buttonStyle(.bordered)
-            .controlSize(.small)
-            .tint(result.target.isPermanent ? .red : .accentColor)
+            .liquidPillButtonStyle(
+                tint: result.target.isPermanent ? .red : .accentColor
+            )
             .disabled(isConfirming)
         }
     }
