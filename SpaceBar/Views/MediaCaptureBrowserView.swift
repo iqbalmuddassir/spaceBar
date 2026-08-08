@@ -208,7 +208,7 @@ private struct MediaCaptureRow: View {
                     .foregroundStyle(isSelected ? Color.accentColor : Color.secondary)
                     .font(.title3)
 
-                thumbnail
+                MediaThumbnailView(item: item)
                     .frame(width: 44, height: 44)
                     .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
                     .overlay(
@@ -240,19 +240,33 @@ private struct MediaCaptureRow: View {
         }
         .buttonStyle(.plain)
     }
+}
 
-    @ViewBuilder
-    private var thumbnail: some View {
-        if item.kind == .screenshot, let image = NSImage(contentsOf: item.url) {
-            Image(nsImage: image)
-                .resizable()
-                .aspectRatio(contentMode: .fill)
-        } else {
-            ZStack {
-                Color.primary.opacity(0.06)
+private struct MediaThumbnailView: View {
+    let item: MediaCaptureItem
+    @State private var image: NSImage?
+
+    var body: some View {
+        ZStack {
+            Color.primary.opacity(0.06)
+            if let image {
+                Image(nsImage: image)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+            } else {
                 Image(systemName: item.kind == .recording ? "video.fill" : "photo")
                     .foregroundStyle(.secondary)
             }
+        }
+        .task(id: item.url) {
+            guard item.kind == .screenshot else {
+                image = nil
+                return
+            }
+            let url = item.url
+            image = await Task.detached(priority: .utility) {
+                NSImage(contentsOf: url)
+            }.value
         }
     }
 }

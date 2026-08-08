@@ -30,5 +30,13 @@
 	<string>NSApplication</string>
 	<key>NSAppleEventsUsageDescription</key>
 	<string>SpaceBar uses Finder to measure and empty the Trash.</string>
+	<key>NSDesktopFolderUsageDescription</key>
+	<string>SpaceBar looks for screenshots and screen recordings on your Desktop so you can review and delete them.</string>
+	<key>NSDownloadsFolderUsageDescription</key>
+	<string>SpaceBar looks for screenshots and screen recordings in Downloads so you can review and delete them.</string>
+	<key>NSPicturesFolderUsageDescription</key>
+	<string>SpaceBar looks for screenshots in Pictures so you can review and delete them.</string>
+	<key>NSMoviesFolderUsageDescription</key>
+	<string>SpaceBar looks for screen recordings in Movies so you can review and delete them.</string>
 </dict>
 </plist>

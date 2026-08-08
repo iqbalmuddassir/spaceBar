@@ -1,7 +1,6 @@
 import Foundation
 
 enum ByteFormatting {
-    /// Matches macOS System Settings Storage (SI / decimal: 1 GB = 1,000³ bytes).
     private static let formatter: ByteCountFormatter = {
         let formatter = ByteCountFormatter()
         formatter.countStyle = .decimal

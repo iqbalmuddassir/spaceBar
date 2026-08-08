@@ -14,7 +14,6 @@ struct CleanTarget: Identifiable, Equatable {
     let safetyNote: String
     let strategy: CleanStrategy
     let requiresStrongConfirm: Bool
-    /// Empty Trash only — permanently destroys Trash contents.
     let isPermanent: Bool
 
     var confirmationTitle: String {

@@ -4,9 +4,9 @@ import Foundation
 import SwiftUI
 
 enum DiskSpaceLevel: Equatable {
-    case healthy // free > 50%
-    case warning // free < 50%
-    case critical // free < 10%
+    case healthy
+    case warning
+    case critical
 
     var color: Color {
         switch self {
@@ -68,7 +68,6 @@ final class DiskSpaceMonitor: ObservableObject {
         apply(stats: stats)
     }
 
-    /// Refresh immediately and again shortly after — APFS free space often lags deletes.
     func refreshAfterCleaning() async {
         refresh()
         try? await Task.sleep(nanoseconds: 800_000_000)
@@ -102,7 +101,6 @@ final class DiskSpaceMonitor: ObservableObject {
         menuBarImage = makeMenuBarImage()
     }
 
-    /// Prefer System Settings–style available capacity when present.
     nonisolated static func volumeStats(at path: String) -> (free: UInt64, total: UInt64) {
         let url = URL(fileURLWithPath: path)
         let keys: Set<URLResourceKey> = [

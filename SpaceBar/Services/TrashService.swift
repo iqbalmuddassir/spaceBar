@@ -6,16 +6,12 @@ struct TrashInfo {
 }
 
 enum TrashService {
-    /// Prefer Finder item enumeration — `physical size of (path to trash)` stays stale after emptying.
     static func info() -> TrashInfo {
-        // Fast path: if Finder says empty, size is zero (folder metadata is often wrong).
         if let count = finderItemCount(), count == 0 {
             return TrashInfo(itemCount: 0, byteSize: 0)
         }
 
-        // Prefer du when Full Disk Access allows reading ~/.Trash
         if let direct = directTrashInfo(), direct.itemCount >= 0 {
-            // If we could list the directory, trust du/listing over Finder folder size.
             return direct
         }
 
@@ -24,8 +20,7 @@ enum TrashService {
         }
 
         if let count = finderItemCount() {
-            // Have items but couldn't measure — show count with unknown size as 0 only if count is 0
-            return TrashInfo(itemCount: count, byteSize: count > 0 ? 1 : 0)
+            return TrashInfo(itemCount: count, byteSize: 0)
         }
 
         return TrashInfo(itemCount: 0, byteSize: 0)
@@ -65,7 +60,6 @@ enum TrashService {
         return count
     }
 
-    /// Sum sizes of each trash item — accurate; folder `physical size` is not.
     private static func finderSummedItemSizes() -> TrashInfo? {
         let script = """
         tell application "Finder"
@@ -121,10 +115,12 @@ enum TrashService {
 
     private static func emptyDirectly() throws {
         let trash = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".Trash", isDirectory: true)
+        try DeletePathGuard.validateForCleanupDelete(trash)
         let fm = FileManager.default
         guard fm.fileExists(atPath: trash.path) else { return }
         let children = try fm.contentsOfDirectory(at: trash, includingPropertiesForKeys: nil, options: [])
         for child in children {
+            try DeletePathGuard.validateForCleanupDelete(child)
             try fm.removeItem(at: child)
         }
     }

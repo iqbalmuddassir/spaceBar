@@ -26,7 +26,7 @@ enum CleanTargetRegistry {
                 subtitle: tildePath(tmp),
                 safetyNote: "Temporary files are regenerated as needed. Close apps using large temp files first.",
                 strategy: .deletePaths([tmp]),
-                requiresStrongConfirm: false,
+                requiresStrongConfirm: true,
                 isPermanent: false
             ),
             CleanTarget(
@@ -262,10 +262,12 @@ enum CleanTargetRegistry {
     }
 
     private static func uvCacheURL(home: URL) -> URL {
+        let fallback = home.appendingPathComponent(".cache/uv", isDirectory: true)
         if let env = ProcessInfo.processInfo.environment["UV_CACHE_DIR"], !env.isEmpty {
-            return URL(fileURLWithPath: env, isDirectory: true)
+            let url = URL(fileURLWithPath: env, isDirectory: true)
+            return DeletePathGuard.constrainedToolCacheURL(url, requiredPathFragment: "uv") ?? fallback
         }
-        return home.appendingPathComponent(".cache/uv", isDirectory: true)
+        return fallback
     }
 
     private static func detectPnpmStore() -> URL? {
@@ -284,7 +286,10 @@ enum CleanTargetRegistry {
                 .trimmingCharacters(in: .whitespacesAndNewlines),
                 !path.isEmpty else { return nil }
             let url = URL(fileURLWithPath: path, isDirectory: true)
-            return FileManager.default.fileExists(atPath: url.path) ? url : nil
+            guard FileManager.default.fileExists(atPath: url.path),
+                  let safe = DeletePathGuard.constrainedToolCacheURL(url, requiredPathFragment: "pnpm")
+            else { return nil }
+            return safe
         } catch {
             return nil
         }

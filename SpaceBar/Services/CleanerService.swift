@@ -6,6 +6,7 @@ enum CleanerError: LocalizedError {
     case commandFailed(String)
     case unknown(String)
     case nothingDeleted(String)
+    case unsafePath(String)
 
     var errorDescription: String? {
         switch self {
@@ -16,6 +17,8 @@ enum CleanerError: LocalizedError {
         case let .unknown(message):
             message
         case let .nothingDeleted(message):
+            message
+        case let .unsafePath(message):
             message
         }
     }
@@ -50,22 +53,15 @@ enum CleanerService {
             let after = TrashService.info().byteSize
             return CleanResult(bytesBefore: before, bytesAfter: after, deletedEntries: 1, failedEntries: 0)
         case .simctlDeleteUnavailable:
-            let before = estimateOrZero(target)
+            let before = CommandSizeEstimator.simulatorUnavailableSize()
             try run(executable: "/usr/bin/xcrun", arguments: ["simctl", "delete", "unavailable"])
-            return CleanResult(bytesBefore: before, bytesAfter: 0, deletedEntries: 1, failedEntries: 0)
+            let after = CommandSizeEstimator.simulatorUnavailableSize()
+            return CleanResult(bytesBefore: before, bytesAfter: after, deletedEntries: 1, failedEntries: 0)
         case .dockerBuilderPrune:
-            let before = estimateOrZero(target)
+            let before = CommandSizeEstimator.dockerBuildCacheSize()
             try run(executable: "/usr/bin/env", arguments: ["docker", "builder", "prune", "-f"])
-            return CleanResult(bytesBefore: before, bytesAfter: 0, deletedEntries: 1, failedEntries: 0)
-        }
-    }
-
-    private static func estimateOrZero(_ target: CleanTarget) -> UInt64 {
-        switch target.strategy {
-        case let .deletePaths(urls):
-            DirectorySizer.size(of: urls)
-        default:
-            0
+            let after = CommandSizeEstimator.dockerBuildCacheSize()
+            return CleanResult(bytesBefore: before, bytesAfter: after, deletedEntries: 1, failedEntries: 0)
         }
     }
 
@@ -136,6 +132,14 @@ enum CleanerService {
     }
 
     private static func deleteContents(of urls: [URL]) throws -> CleanResult {
+        for url in urls {
+            do {
+                try DeletePathGuard.validateForCleanupDelete(url)
+            } catch let refusal as DeletePathGuard.Refusal {
+                throw CleanerError.unsafePath(refusal.errorDescription ?? "Unsafe path")
+            }
+        }
+
         let existing = urls.filter { FileManager.default.fileExists(atPath: $0.path) }
         let before = DirectorySizer.size(of: existing)
 
@@ -147,13 +151,19 @@ enum CleanerService {
         for url in existing {
             let items = expansionTargets(for: url)
             if items.isEmpty {
-                // Directory existed but listing failed — treat as permission/access issue.
                 failed += 1
                 permissionFails += 1
                 lastError = "Could not list \(url.lastPathComponent)"
                 continue
             }
             for item in items {
+                do {
+                    try DeletePathGuard.validateForCleanupDelete(item)
+                } catch {
+                    failed += 1
+                    lastError = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+                    continue
+                }
                 if forceRemove(item) {
                     deleted += 1
                 } else {
@@ -178,7 +188,6 @@ enum CleanerService {
             throw CleanerError.nothingDeleted(lastError.map { "Could not delete \($0)" } ?? "Nothing was deleted.")
         }
 
-        // If we deleted entries but measured size barely moved and everything still exists, call it out.
         if result.bytesFreed == 0, failed > deleted {
             throw CleanerError.nothingDeleted("Files are locked or protected. Quit related apps and try again.")
         }
@@ -201,15 +210,11 @@ enum CleanerService {
         return [url]
     }
 
-    /// Prefer `rm -rf` — more reliable than FileManager for large/stubborn trees.
     private static func forceRemove(_ url: URL) -> Bool {
-        // Try FileManager first (fast path)
         do {
             try FileManager.default.removeItem(at: url)
             return true
-        } catch {
-            // Fall through to rm
-        }
+        } catch { }
 
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/bin/rm")

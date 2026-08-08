@@ -69,16 +69,21 @@ final class MediaCaptureStore: ObservableObject {
     }
 
     private var statusClearTask: Task<Void, Never>?
+    private var scanTask: Task<Void, Never>?
 
     func scan() {
+        scanTask?.cancel()
         isScanning = true
         statusMessage = "Scanning screenshots & recordings…"
-        Task {
+        scanTask = Task {
             let found = await Task.detached(priority: .utility) {
                 MediaCaptureScanner.scan()
             }.value
+            guard !Task.isCancelled else {
+                isScanning = false
+                return
+            }
             items = found
-            // Drop selections that no longer exist
             selectedIDs = selectedIDs.intersection(Set(found.map(\.id)))
             isScanning = false
             if found.isEmpty {
@@ -99,6 +104,11 @@ final class MediaCaptureStore: ObservableObject {
     func closeBrowser() {
         showBrowser = false
         confirmDelete = false
+    }
+
+    func resetTransientUIState() {
+        confirmDelete = false
+        showBrowser = false
     }
 
     func toggleSelection(_ id: URL) {
@@ -181,6 +191,12 @@ final class MediaCaptureStore: ObservableObject {
     }
 
     private nonisolated static func forceRemove(_ url: URL) -> Bool {
+        do {
+            try DeletePathGuard.validateForMediaDelete(url)
+        } catch {
+            return false
+        }
+
         do {
             try FileManager.default.removeItem(at: url)
             return true

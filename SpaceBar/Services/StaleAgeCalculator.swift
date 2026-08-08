@@ -1,7 +1,6 @@
 import Foundation
 
 enum StaleAgeCalculator {
-    /// Returns a human label based on the most recently modified item found (sampled).
     static func staleDescription(for urls: [URL], maxSamples: Int = 80) -> String? {
         guard let newest = newestModificationDate(for: urls, maxSamples: maxSamples) else { return nil }
         return relativeAge(from: newest)

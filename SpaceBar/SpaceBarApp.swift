@@ -6,7 +6,6 @@ struct SpaceBarApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
     var body: some Scene {
-        // Menu-bar only app; status item is created in AppDelegate.
         Settings {
             EmptyView()
         }

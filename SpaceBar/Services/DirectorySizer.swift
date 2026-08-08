@@ -5,7 +5,6 @@ enum DirectorySizer {
         urls.reduce(into: UInt64(0)) { $0 += size(of: $1) }
     }
 
-    /// Prefer `du` for speed on large trees; fall back to enumerator.
     static func size(of url: URL) -> UInt64 {
         let fm = FileManager.default
         var isDir: ObjCBool = false

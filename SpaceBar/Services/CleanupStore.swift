@@ -25,6 +25,15 @@ final class CleanupStore: ObservableObject {
         ByteFormatting.string(from: totalReclaimable)
     }
 
+    var isDeletingAny: Bool {
+        results.contains { result in
+            if case .deleting = result.phase {
+                return true
+            }
+            return false
+        }
+    }
+
     private var scanTask: Task<Void, Never>?
     private var hasCompletedInitialScan = false
     private var statusClearTask: Task<Void, Never>?
@@ -35,67 +44,87 @@ final class CleanupStore: ObservableObject {
     }
 
     func scanAll(clearExisting: Bool = false) {
+        guard !isDeletingAny else {
+            setStatus("Wait for the current delete to finish")
+            return
+        }
         scanTask?.cancel()
         isScanning = true
         scanProgress = 0
         statusMessage = "Scanning…"
-        if clearExisting {
-            results = []
-        } else {
-            // Reset row phases so a refresh doesn't keep stale success/error states.
-            results = results.map { item in
-                var copy = item
-                copy.phase = .scanning
-                copy.errorMessage = nil
-                return copy
-            }
-        }
+        prepareResultsForScan(clearExisting: clearExisting)
 
         let targets = CleanTargetRegistry.allTargets()
         let total = Double(max(targets.count, 1))
 
         scanTask = Task {
-            var collected: [String: TargetScanResult] = [:]
+            await self.runScan(targets: targets, total: total)
+        }
+    }
 
-            var completed = 0
-            var lastUIUpdate = Date.distantPast
-            await withTaskGroup(of: (String, TargetScanResult).self) { group in
-                for target in targets {
-                    group.addTask {
-                        let scanned = await self.scan(target: target) ?? TargetScanResult(
-                            target: target,
-                            byteSize: 0,
-                            staleDescription: nil,
-                            phase: .ready,
-                            errorMessage: nil
-                        )
-                        return (target.id, scanned)
-                    }
-                }
+    func resetTransientUIState() {
+        pendingConfirmID = nil
+        showFullDiskAccessPrompt = false
+    }
 
-                for await (id, scanned) in group {
-                    if Task.isCancelled {
-                        return
-                    }
-                    completed += 1
-                    collected[id] = scanned
-                    self.scanProgress = Double(completed) / total
-                    let now = Date()
-                    if now.timeIntervalSince(lastUIUpdate) > 0.18 || completed == Int(total) {
-                        lastUIUpdate = now
-                        self.applyCollected(collected, animated: true, preserveBusyPhases: false)
-                    }
+    private func prepareResultsForScan(clearExisting: Bool) {
+        if clearExisting {
+            results = []
+            return
+        }
+        results = results.map { item in
+            var copy = item
+            copy.phase = .scanning
+            copy.errorMessage = nil
+            return copy
+        }
+    }
+
+    private func runScan(targets: [CleanTarget], total: Double) async {
+        var collected: [String: TargetScanResult] = [:]
+        var completed = 0
+        var lastUIUpdate = Date.distantPast
+
+        await withTaskGroup(of: (String, TargetScanResult).self) { group in
+            for target in targets {
+                group.addTask {
+                    let scanned = await self.scan(target: target) ?? TargetScanResult(
+                        target: target,
+                        byteSize: 0,
+                        staleDescription: nil,
+                        phase: .ready,
+                        errorMessage: nil
+                    )
+                    return (target.id, scanned)
                 }
             }
 
-            guard !Task.isCancelled else { return }
-            self.applyCollected(collected, animated: true, preserveBusyPhases: false)
-            self.isScanning = false
-            self.scanProgress = 1
-            self.hasCompletedInitialScan = true
-            let reclaim = ByteFormatting.string(from: self.totalReclaimable)
-            self.setStatus("Scan complete · \(self.results.count) targets · \(reclaim) reclaimable")
+            for await (id, scanned) in group {
+                if Task.isCancelled {
+                    group.cancelAll()
+                    break
+                }
+                completed += 1
+                collected[id] = scanned
+                scanProgress = Double(completed) / total
+                let now = Date()
+                if now.timeIntervalSince(lastUIUpdate) > 0.18 || completed == Int(total) {
+                    lastUIUpdate = now
+                    applyCollected(collected, animated: true, preserveBusyPhases: false)
+                }
+            }
         }
+
+        if Task.isCancelled {
+            isScanning = false
+            return
+        }
+        applyCollected(collected, animated: true, preserveBusyPhases: false)
+        isScanning = false
+        scanProgress = 1
+        hasCompletedInitialScan = true
+        let reclaim = ByteFormatting.string(from: totalReclaimable)
+        setStatus("Scan complete · \(results.count) targets · \(reclaim) reclaimable")
     }
 
     private func applyCollected(
@@ -194,7 +223,6 @@ final class CleanupStore: ObservableObject {
         }
         setStatus("Deleting \(target.name)…")
 
-        // Always clean using a fresh registry target so paths are current.
         let liveTarget = CleanTargetRegistry.allTargets().first(where: { $0.id == target.id }) ?? target
 
         do {
@@ -212,7 +240,16 @@ final class CleanupStore: ObservableObject {
             }
 
             let freed = ByteFormatting.string(from: cleanResult.bytesFreed)
-            setStatus("Freed \(freed) from \(target.name)")
+            if cleanResult.failedEntries > 0 {
+                let failed = cleanResult.failedEntries
+                let unit = failed == 1 ? "item" : "items"
+                setStatus("Freed \(freed) from \(target.name) · \(failed) \(unit) failed")
+                if let index = results.firstIndex(where: { $0.id == target.id }) {
+                    results[index].errorMessage = "\(failed) \(unit) could not be deleted"
+                }
+            } else {
+                setStatus("Freed \(freed) from \(target.name)")
+            }
 
             try? await Task.sleep(nanoseconds: 450_000_000)
             await rescan(targetID: target.id)
@@ -236,68 +273,5 @@ final class CleanupStore: ObservableObject {
                 }
             }
         }
-    }
-
-    private func scan(target: CleanTarget) async -> TargetScanResult? {
-        await Task.detached(priority: .utility) {
-            switch target.strategy {
-            case let .deletePaths(urls):
-                let existing = urls.filter { FileManager.default.fileExists(atPath: $0.path) }
-                guard !existing.isEmpty else {
-                    return TargetScanResult(
-                        target: target,
-                        byteSize: 0,
-                        staleDescription: nil,
-                        phase: .ready,
-                        errorMessage: nil
-                    )
-                }
-                let size = DirectorySizer.size(of: existing)
-                let stale = StaleAgeCalculator.staleDescription(for: existing)
-                return TargetScanResult(
-                    target: target,
-                    byteSize: size,
-                    staleDescription: stale,
-                    phase: .ready,
-                    errorMessage: nil
-                )
-
-            case .emptyTrash:
-                let info = TrashService.info()
-                let stale: String? = if info.itemCount > 0 {
-                    info.itemCount == 1 ? "1 item" : "\(info.itemCount) items"
-                } else {
-                    nil
-                }
-                return TargetScanResult(
-                    target: target,
-                    byteSize: info.byteSize,
-                    staleDescription: stale,
-                    itemCount: info.itemCount,
-                    phase: .ready,
-                    errorMessage: nil
-                )
-
-            case .simctlDeleteUnavailable:
-                let size = CommandSizeEstimator.simulatorUnavailableSize()
-                return TargetScanResult(
-                    target: target,
-                    byteSize: size,
-                    staleDescription: nil,
-                    phase: .ready,
-                    errorMessage: nil
-                )
-
-            case .dockerBuilderPrune:
-                let size = CommandSizeEstimator.dockerBuildCacheSize()
-                return TargetScanResult(
-                    target: target,
-                    byteSize: size,
-                    staleDescription: nil,
-                    phase: .ready,
-                    errorMessage: nil
-                )
-            }
-        }.value
     }
 }

@@ -2,7 +2,6 @@ import AppKit
 import Combine
 import SwiftUI
 
-/// AppKit status item so the free-space bar keeps green/orange/red in the menu bar.
 @MainActor
 final class StatusItemController: NSObject, ObservableObject {
     private var statusItem: NSStatusItem?
@@ -107,6 +106,9 @@ final class StatusItemController: NSObject, ObservableObject {
 
     private func handleOutsideClick() {
         guard let panel, panel.isVisible else { return }
+        if store.showFullDiskAccessPrompt || store.pendingConfirmID != nil || mediaStore.confirmDelete {
+            return
+        }
         let click = NSEvent.mouseLocation
         if panel.frame.contains(click) {
             return
@@ -141,6 +143,8 @@ final class StatusItemController: NSObject, ObservableObject {
     }
 
     private func closePanel() {
+        store.resetTransientUIState()
+        mediaStore.resetTransientUIState()
         panel?.orderOut(nil)
         panel = nil
         if let eventMonitor {

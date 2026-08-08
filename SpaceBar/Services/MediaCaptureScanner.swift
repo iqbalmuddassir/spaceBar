@@ -7,6 +7,9 @@ enum MediaCaptureScanner {
         items.reserveCapacity(urls.count)
 
         for url in urls {
+            if Task.isCancelled {
+                break
+            }
             guard let kind = classify(url) else { continue }
             let values = try? url.resourceValues(forKeys: [
                 .fileSizeKey,
@@ -42,11 +45,10 @@ enum MediaCaptureScanner {
             home.appendingPathComponent("Downloads", isDirectory: true)
         ]
 
-        if let custom = screencaptureLocation() {
+        if let custom = screencaptureLocation(), DeletePathGuard.isUnderHome(custom) {
             dirs.append(custom)
         }
 
-        // Deduplicate
         var seen = Set<String>()
         return dirs.filter { url in
             let path = url.standardizedFileURL.path
@@ -88,19 +90,30 @@ enum MediaCaptureScanner {
                 options: [.skipsHiddenFiles, .skipsPackageDescendants]
             ) else { continue }
 
-            // Keep shallow for Desktop/Downloads; allow one level deeper for Pictures/Movies.
             let maxDepth = depthLimit(for: dir)
+            let rootPath = dir.standardizedFileURL.path
 
             for case let fileURL as URL in enumerator {
-                let depth = fileURL.path.replacingOccurrences(of: dir.path, with: "")
+                if Task.isCancelled {
+                    return results
+                }
+
+                let standardized = fileURL.standardizedFileURL
+                let path = standardized.path
+                guard path == rootPath || path.hasPrefix(rootPath + "/") else {
+                    enumerator.skipDescendants()
+                    continue
+                }
+
+                let depth = path.replacingOccurrences(of: rootPath, with: "")
                     .split(separator: "/")
                     .count
                 if depth > maxDepth {
                     enumerator.skipDescendants()
                     continue
                 }
-                if classify(fileURL) != nil {
-                    results.append(fileURL)
+                if classify(standardized) != nil {
+                    results.append(standardized)
                 }
             }
         }
@@ -109,7 +122,7 @@ enum MediaCaptureScanner {
 
     private static func depthLimit(for dir: URL) -> Int {
         let name = dir.lastPathComponent.lowercased()
-        if name == "pictures" || name == "movies" {
+        if name == "pictures" || name == "movies" || name == "screenshots" {
             return 2
         }
         return 1
@@ -128,13 +141,6 @@ enum MediaCaptureScanner {
         }
         if lower.hasPrefix("screenshot") || lower.hasPrefix("screen shot"), imageExts.contains(ext) {
             return .screenshot
-        }
-        // Localized / newer patterns
-        if lower.contains("screenshot"), imageExts.contains(ext) {
-            return .screenshot
-        }
-        if lower.contains("screen recording"), recordingExts.contains(ext) {
-            return .recording
         }
         return nil
     }

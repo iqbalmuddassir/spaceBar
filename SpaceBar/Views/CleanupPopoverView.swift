@@ -190,7 +190,12 @@ struct CleanupPopoverView: View {
                         )
                 }
                 .buttonStyle(.borderless)
-                .disabled(store.isScanning || store.pendingConfirmID != nil)
+                .disabled(
+                    store.isScanning
+                        || store.isDeletingAny
+                        || mediaStore.isDeleting
+                        || store.pendingConfirmID != nil
+                )
                 .help("Rescan")
             }
 
