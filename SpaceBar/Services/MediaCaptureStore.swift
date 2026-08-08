@@ -111,6 +111,17 @@ final class MediaCaptureStore: ObservableObject {
         showBrowser = false
     }
 
+    func loadFixture(items: [MediaCaptureItem], statusMessage: String? = nil) {
+        scanTask?.cancel()
+        isScanning = false
+        isDeleting = false
+        confirmDelete = false
+        showBrowser = false
+        self.items = items
+        selectedIDs = []
+        self.statusMessage = statusMessage
+    }
+
     func toggleSelection(_ id: URL) {
         if selectedIDs.contains(id) {
             selectedIDs.remove(id)

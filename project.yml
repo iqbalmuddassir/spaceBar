@@ -8,6 +8,10 @@ settings:
   base:
     SWIFT_VERSION: "5.0"
     MACOSX_DEPLOYMENT_TARGET: "14.0"
+packages:
+  SnapshotTesting:
+    url: https://github.com/pointfreeco/swift-snapshot-testing
+    from: 1.18.3
 targets:
   SpaceBar:
     type: application
@@ -30,13 +34,18 @@ targets:
         GCC_TREAT_WARNINGS_AS_ERRORS: YES
     entitlements:
       path: SpaceBar/SpaceBar.entitlements
+      properties:
+        com.apple.security.automation.apple-events: true
+    scheme:
+      testTargets:
+        - SpaceBarTests
     preBuildScripts:
       - name: SwiftFormat
         basedOnDependencyAnalysis: false
         script: |
           export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
           if which swiftformat >/dev/null; then
-            swiftformat "${SRCROOT}/SpaceBar" --config "${SRCROOT}/.swiftformat"
+            swiftformat "${SRCROOT}/SpaceBar" "${SRCROOT}/SpaceBarTests" --config "${SRCROOT}/.swiftformat"
           else
             echo "warning: SwiftFormat not installed (brew install swiftformat)"
           fi
@@ -45,7 +54,26 @@ targets:
         script: |
           export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
           if which swiftlint >/dev/null; then
-            swiftlint lint --config "${SRCROOT}/.swiftlint.yml" --strict "${SRCROOT}/SpaceBar"
+            swiftlint lint --config "${SRCROOT}/.swiftlint.yml" --strict "${SRCROOT}/SpaceBar" "${SRCROOT}/SpaceBarTests"
           else
             echo "warning: SwiftLint not installed (brew install swiftlint)"
           fi
+  SpaceBarTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - path: SpaceBarTests
+        excludes:
+          - "**/__Snapshots__/**"
+          - "**/*.png"
+    dependencies:
+      - target: SpaceBar
+      - package: SnapshotTesting
+        product: SnapshotTesting
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.spacebar.app.tests
+        GENERATE_INFOPLIST_FILE: YES
+        SWIFT_TREAT_WARNINGS_AS_ERRORS: YES
+        GCC_TREAT_WARNINGS_AS_ERRORS: YES
+        MACOSX_DEPLOYMENT_TARGET: "14.0"

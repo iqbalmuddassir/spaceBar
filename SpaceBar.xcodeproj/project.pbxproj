@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		01A1AB7131A62BC2B593D888 /* CleanTarget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85C6247B9D220C9A63F60E28 /* CleanTarget.swift */; };
 		1759CBF373386EC4F837BAC1 /* MediaCaptureStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = E156FD66909011B512BC63B7 /* MediaCaptureStore.swift */; };
+		203168121851253C16AAD14E /* SnapshotTesting in Frameworks */ = {isa = PBXBuildFile; productRef = 6EB75978BFF4F8FBB98A5F8E /* SnapshotTesting */; };
 		2506BF5BA7BF08B47E6CFE44 /* DiskSpaceMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35565FF659508C92C2775F2E /* DiskSpaceMonitor.swift */; };
 		297693A61FE7FE74DBD43732 /* CleanupPopoverView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24B79F7F0E02838A065C0E61 /* CleanupPopoverView.swift */; };
 		2E0E547DAAA9132854B1BA85 /* TrashService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8973D1CB7AD9599868EA5C3B /* TrashService.swift */; };
@@ -20,9 +21,11 @@
 		520EA8B82A77732C367D86FD /* MediaCaptureScanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = F031A0625CF326FD4956D4E4 /* MediaCaptureScanner.swift */; };
 		5D964EB8DB065E7877D9B8C8 /* CleanTargetRegistry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9488E13FB89A188B8EFCB883 /* CleanTargetRegistry.swift */; };
 		6DE716BCF381CF6364339490 /* MenuBarStatusImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8105A1F2A00BA4AE8D3687DF /* MenuBarStatusImage.swift */; };
+		7824E72E8D7B400A50F728B1 /* PanelSnapshotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D38C647180C9B62DE42B60C /* PanelSnapshotTests.swift */; };
 		909FE14928058BED3E965A07 /* StatusItemController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15945E7F8C025E47046AB918 /* StatusItemController.swift */; };
 		9C12A6D0429097504101F953 /* StaleAgeCalculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B1F13914D08DDDD4601E508 /* StaleAgeCalculator.swift */; };
 		A0BCD9BB62D35B5C25DAF3E3 /* CleanupStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92E96DFFDDAEA8F264E42347 /* CleanupStore.swift */; };
+		A1FE015770E0D71687B4C2DA /* SnapshotFixtures.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83E86BAA7AEA14AD1164F5DA /* SnapshotFixtures.swift */; };
 		A64941E7297DFBD974D55E21 /* CleanupRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B57ACD562316A61EEAC7416 /* CleanupRowView.swift */; };
 		AB3A733F91A3DA9BAEB1066F /* ByteFormatting.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2119658F7ECAC1DA45690B39 /* ByteFormatting.swift */; };
 		C481854918E82E7DE6EACBA7 /* CleanerService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8122BA709781AEF583A32463 /* CleanerService.swift */; };
@@ -31,6 +34,16 @@
 		F21E63A1AC0C755B8612DC32 /* SpaceBarApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2E384D077136B804F28F58F /* SpaceBarApp.swift */; };
 		FCF535FD7E86DA51E75D5B21 /* DeletePathGuard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 656E1049AE27D1A8F42F4570 /* DeletePathGuard.swift */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		F41BA3BEE00E8F3119277120 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A371A0D33E582904442E5853 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 6A88AF561F2C07634EB76F71;
+			remoteInfo = SpaceBar;
+		};
+/* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
 		09671CEDD8638D2719F98666 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -42,12 +55,15 @@
 		35565FF659508C92C2775F2E /* DiskSpaceMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiskSpaceMonitor.swift; sourceTree = "<group>"; };
 		3B1F13914D08DDDD4601E508 /* StaleAgeCalculator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StaleAgeCalculator.swift; sourceTree = "<group>"; };
 		47D5D858B7D5F0CDC288681B /* MediaCaptureBrowserView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaCaptureBrowserView.swift; sourceTree = "<group>"; };
+		4F145FB5C8FE818B008042A0 /* SpaceBarTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SpaceBarTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		5B45FD5F11DE38D0E8F8D21D /* MediaCaptureItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaCaptureItem.swift; sourceTree = "<group>"; };
 		656E1049AE27D1A8F42F4570 /* DeletePathGuard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeletePathGuard.swift; sourceTree = "<group>"; };
 		72E8F46CC6A165F69610E996 /* SpaceBar.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SpaceBar.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		7D38C647180C9B62DE42B60C /* PanelSnapshotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PanelSnapshotTests.swift; sourceTree = "<group>"; };
 		8105A1F2A00BA4AE8D3687DF /* MenuBarStatusImage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarStatusImage.swift; sourceTree = "<group>"; };
 		8122BA709781AEF583A32463 /* CleanerService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CleanerService.swift; sourceTree = "<group>"; };
 		827BAE8E50426C97C34A38D7 /* SpaceBar.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = SpaceBar.entitlements; sourceTree = "<group>"; };
+		83E86BAA7AEA14AD1164F5DA /* SnapshotFixtures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnapshotFixtures.swift; sourceTree = "<group>"; };
 		85C6247B9D220C9A63F60E28 /* CleanTarget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CleanTarget.swift; sourceTree = "<group>"; };
 		8973D1CB7AD9599868EA5C3B /* TrashService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrashService.swift; sourceTree = "<group>"; };
 		92E96DFFDDAEA8F264E42347 /* CleanupStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CleanupStore.swift; sourceTree = "<group>"; };
@@ -61,11 +77,23 @@
 		F031A0625CF326FD4956D4E4 /* MediaCaptureScanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaCaptureScanner.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
+/* Begin PBXFrameworksBuildPhase section */
+		44C7CD9AA2D89D589512E43C /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				203168121851253C16AAD14E /* SnapshotTesting in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
 /* Begin PBXGroup section */
 		228645FD8D5D55DF49699943 = {
 			isa = PBXGroup;
 			children = (
 				4CAEF3A671C632F553B2CF7E /* SpaceBar */,
+				E5082873BF4DD830F5A2545D /* SpaceBarTests */,
 				62E01DC3E93AB3571F75FDC9 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -105,10 +133,19 @@
 			path = SpaceBar;
 			sourceTree = "<group>";
 		};
+		5CC89E6F5D557E39AB9C3632 /* Support */ = {
+			isa = PBXGroup;
+			children = (
+				83E86BAA7AEA14AD1164F5DA /* SnapshotFixtures.swift */,
+			);
+			path = Support;
+			sourceTree = "<group>";
+		};
 		62E01DC3E93AB3571F75FDC9 /* Products */ = {
 			isa = PBXGroup;
 			children = (
 				72E8F46CC6A165F69610E996 /* SpaceBar.app */,
+				4F145FB5C8FE818B008042A0 /* SpaceBarTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -131,6 +168,15 @@
 				47D5D858B7D5F0CDC288681B /* MediaCaptureBrowserView.swift */,
 			);
 			path = Views;
+			sourceTree = "<group>";
+		};
+		E5082873BF4DD830F5A2545D /* SpaceBarTests */ = {
+			isa = PBXGroup;
+			children = (
+				7D38C647180C9B62DE42B60C /* PanelSnapshotTests.swift */,
+				5CC89E6F5D557E39AB9C3632 /* Support */,
+			);
+			path = SpaceBarTests;
 			sourceTree = "<group>";
 		};
 		F1CC4368E1529484A8260BD2 /* Utilities */ = {
@@ -165,6 +211,26 @@
 			productReference = 72E8F46CC6A165F69610E996 /* SpaceBar.app */;
 			productType = "com.apple.product-type.application";
 		};
+		8972DA8E9CBC2F189C21E7BA /* SpaceBarTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 16F4D010B94117E84686B2BE /* Build configuration list for PBXNativeTarget "SpaceBarTests" */;
+			buildPhases = (
+				A3ED45B7E9F857A85B4EE4F6 /* Sources */,
+				44C7CD9AA2D89D589512E43C /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				ADEA0F7375529576EC93BFB9 /* PBXTargetDependency */,
+			);
+			name = SpaceBarTests;
+			packageProductDependencies = (
+				6EB75978BFF4F8FBB98A5F8E /* SnapshotTesting */,
+			);
+			productName = SpaceBarTests;
+			productReference = 4F145FB5C8FE818B008042A0 /* SpaceBarTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -188,12 +254,16 @@
 			);
 			mainGroup = 228645FD8D5D55DF49699943;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				43D6C2F31DD170B36F8FE89A /* XCRemoteSwiftPackageReference "swift-snapshot-testing" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 62E01DC3E93AB3571F75FDC9 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
 				6A88AF561F2C07634EB76F71 /* SpaceBar */,
+				8972DA8E9CBC2F189C21E7BA /* SpaceBarTests */,
 			);
 		};
 /* End PBXProject section */
@@ -227,7 +297,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "export PATH=\"/opt/homebrew/bin:/usr/local/bin:$PATH\"\nif which swiftformat >/dev/null; then\n  swiftformat \"${SRCROOT}/SpaceBar\" --config \"${SRCROOT}/.swiftformat\"\nelse\n  echo \"warning: SwiftFormat not installed (brew install swiftformat)\"\nfi\n";
+			shellScript = "export PATH=\"/opt/homebrew/bin:/usr/local/bin:$PATH\"\nif which swiftformat >/dev/null; then\n  swiftformat \"${SRCROOT}/SpaceBar\" \"${SRCROOT}/SpaceBarTests\" --config \"${SRCROOT}/.swiftformat\"\nelse\n  echo \"warning: SwiftFormat not installed (brew install swiftformat)\"\nfi\n";
 		};
 		D912E4E54E3AD51E4FD3C50A /* SwiftLint */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -246,7 +316,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "export PATH=\"/opt/homebrew/bin:/usr/local/bin:$PATH\"\nif which swiftlint >/dev/null; then\n  swiftlint lint --config \"${SRCROOT}/.swiftlint.yml\" --strict \"${SRCROOT}/SpaceBar\"\nelse\n  echo \"warning: SwiftLint not installed (brew install swiftlint)\"\nfi\n";
+			shellScript = "export PATH=\"/opt/homebrew/bin:/usr/local/bin:$PATH\"\nif which swiftlint >/dev/null; then\n  swiftlint lint --config \"${SRCROOT}/.swiftlint.yml\" --strict \"${SRCROOT}/SpaceBar\" \"${SRCROOT}/SpaceBarTests\"\nelse\n  echo \"warning: SwiftLint not installed (brew install swiftlint)\"\nfi\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -280,9 +350,46 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		A3ED45B7E9F857A85B4EE4F6 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				7824E72E8D7B400A50F728B1 /* PanelSnapshotTests.swift in Sources */,
+				A1FE015770E0D71687B4C2DA /* SnapshotFixtures.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		ADEA0F7375529576EC93BFB9 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 6A88AF561F2C07634EB76F71 /* SpaceBar */;
+			targetProxy = F41BA3BEE00E8F3119277120 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin XCBuildConfiguration section */
+		3E4BBBF3881417E1F8E03B6F /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				COMBINE_HIDPI_IMAGES = YES;
+				GCC_TREAT_WARNINGS_AS_ERRORS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.spacebar.app.tests;
+				SDKROOT = macosx;
+				SWIFT_TREAT_WARNINGS_AS_ERRORS = YES;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/SpaceBar.app/Contents/MacOS/SpaceBar";
+			};
+			name = Debug;
+		};
 		4584F6E72513331FD1C7DFAB /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -440,9 +547,38 @@
 			};
 			name = Debug;
 		};
+		E7D365556F67C1146086EA65 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				COMBINE_HIDPI_IMAGES = YES;
+				GCC_TREAT_WARNINGS_AS_ERRORS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.spacebar.app.tests;
+				SDKROOT = macosx;
+				SWIFT_TREAT_WARNINGS_AS_ERRORS = YES;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/SpaceBar.app/Contents/MacOS/SpaceBar";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		16F4D010B94117E84686B2BE /* Build configuration list for PBXNativeTarget "SpaceBarTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				3E4BBBF3881417E1F8E03B6F /* Debug */,
+				E7D365556F67C1146086EA65 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
 		47D9072FD82751089FDD78E1 /* Build configuration list for PBXProject "SpaceBar" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -462,6 +598,25 @@
 			defaultConfigurationName = Debug;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		43D6C2F31DD170B36F8FE89A /* XCRemoteSwiftPackageReference "swift-snapshot-testing" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/pointfreeco/swift-snapshot-testing";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.18.3;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		6EB75978BFF4F8FBB98A5F8E /* SnapshotTesting */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 43D6C2F31DD170B36F8FE89A /* XCRemoteSwiftPackageReference "swift-snapshot-testing" */;
+			productName = SnapshotTesting;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = A371A0D33E582904442E5853 /* Project object */;
 }

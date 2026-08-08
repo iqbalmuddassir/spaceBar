@@ -76,6 +76,10 @@ final class DiskSpaceMonitor: ObservableObject {
         refresh()
     }
 
+    func applyFixture(freeBytes: UInt64, totalBytes: UInt64) {
+        apply(stats: (freeBytes, totalBytes))
+    }
+
     private func apply(stats: (free: UInt64, total: UInt64)) {
         freeBytes = stats.free
         totalBytes = stats.total

@@ -31,8 +31,10 @@ playground.xcworkspace
 # XcodeGen / SPM
 .swiftpm/
 Packages/
-Package.resolved
-*.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/
+# Keep Package.resolved so SnapshotTesting versions stay pinned across machines.
+# Package.resolved
+# *.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/
+
 
 # CocoaPods / Carthage (if added later)
 Pods/

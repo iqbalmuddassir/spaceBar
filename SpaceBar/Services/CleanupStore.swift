@@ -67,6 +67,17 @@ final class CleanupStore: ObservableObject {
         showFullDiskAccessPrompt = false
     }
 
+    func loadFixture(results: [TargetScanResult], statusMessage: String? = nil) {
+        scanTask?.cancel()
+        hasCompletedInitialScan = true
+        isScanning = false
+        scanProgress = 1
+        pendingConfirmID = nil
+        showFullDiskAccessPrompt = false
+        self.results = results
+        self.statusMessage = statusMessage
+    }
+
     private func prepareResultsForScan(clearExisting: Bool) {
         if clearExisting {
             results = []

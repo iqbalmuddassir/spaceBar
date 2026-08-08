@@ -3,6 +3,8 @@ excluded:
   - build
   - DerivedData
   - .swiftpm
+  - "**/__Snapshots__"
+  - Docs
 
 opt_in_rules:
   - empty_count
@@ -18,7 +20,6 @@ opt_in_rules:
   - overridden_super_call
   - prefer_self_type_over_type_of_self
   - redundant_nil_coalescing
-  - sorted_imports
   - toggle_bool
   - vertical_whitespace_closing_braces
   - yoda_condition
@@ -26,6 +27,8 @@ opt_in_rules:
 disabled_rules:
   - trailing_comma
   - todo
+  # Conflicts with SwiftFormat --importgrouping testable-bottom
+  - sorted_imports
 
 line_length:
   warning: 120

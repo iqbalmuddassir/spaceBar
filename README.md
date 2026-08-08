@@ -4,6 +4,24 @@ SpaceBar is a macOS menu bar app for reclaiming disk space without digging throu
 
 Developer machines fill up with regenerable junk: Xcode DerivedData, package caches, simulators, Docker build cache, temp files, and piles of screenshots. Trash does not free space until you empty it. SpaceBar makes that reclaimable space visible and removable from one panel.
 
+<p align="center">
+  <img src="Docs/spacebar-panel.png" alt="SpaceBar panel showing free space, reclaimable caches, and cleanup actions" width="420" />
+</p>
+
+<p align="center">
+  <img src="Docs/spacebar-pill-good.png" alt="Menu bar pill with plenty of free space" height="22" />
+  &nbsp;
+  <img src="Docs/spacebar-pill-low.png" alt="Menu bar pill when space is running low" height="22" />
+  &nbsp;
+  <img src="Docs/spacebar-pill-critical.png" alt="Menu bar pill when space is critically low" height="22" />
+</p>
+
+<p align="center">
+  <img src="Docs/spacebar-panel-good.png" alt="SpaceBar panel — plenty of space" width="200" />
+  <img src="Docs/spacebar-panel-low.png" alt="SpaceBar panel — running low" width="200" />
+  <img src="Docs/spacebar-panel-critical.png" alt="SpaceBar panel — critically low" width="200" />
+</p>
+
 **Copyright © 2026 Muddassir Iqbal**
 
 ## What it does
@@ -24,6 +42,7 @@ Sizes use decimal GB (1 GB = 1,000³ bytes), same style as System Settings → S
 | UI | SwiftUI |
 | Menu bar / panel | AppKit (`NSStatusItem`, `NSPanel`) so the free-space pill can stay colored |
 | Project generation | [XcodeGen](https://github.com/yonaskolb/XcodeGen) (`project.yml`) |
+| Snapshot tests | [swift-snapshot-testing](https://github.com/pointfreeco/swift-snapshot-testing) |
 | Platform | Native macOS app (non-sandboxed, Hardened Runtime) |
 | Tooling | SwiftFormat + SwiftLint (pre-build scripts, warnings as errors) |
 
@@ -106,8 +125,33 @@ open build/Build/Products/Debug/SpaceBar.app
 Or open `SpaceBar.xcodeproj` in Xcode and run.
 
 ```bash
-swiftformat SpaceBar --config .swiftformat
-swiftlint lint --config .swiftlint.yml --strict SpaceBar
+swiftformat SpaceBar SpaceBarTests --config .swiftformat
+swiftlint lint --config .swiftlint.yml --strict SpaceBar SpaceBarTests
+```
+
+## Snapshot tests
+
+UI snapshots cover the cleanup panel and menu bar pill for three free-space levels:
+
+| Case | Free space | Color |
+| --- | --- | --- |
+| Good | ~62% free | Green |
+| Low | 25% free | Orange |
+| Critical | 5% free | Red |
+
+Fixtures seed fixed disk/cache/media data so images stay stable.
+
+```bash
+xcodegen generate
+xcodebuild -scheme SpaceBar -destination 'platform=macOS,arch=arm64' -derivedDataPath build test
+```
+
+Reference images live in `SpaceBarTests/__Snapshots__/`. README assets under `Docs/` are refreshed when the snapshot tests run (`spacebar-panel-*.png`, `spacebar-pill-*.png`).
+
+To re-record after intentional UI changes:
+
+```bash
+SNAPSHOT_TESTING_RECORD=all xcodebuild -scheme SpaceBar -destination 'platform=macOS,arch=arm64' -derivedDataPath build test
 ```
 
 ## Project layout
@@ -115,13 +159,17 @@ swiftlint lint --config .swiftlint.yml --strict SpaceBar
 ```
 SpaceBar/
 ├── project.yml
+├── Docs/spacebar-panel.png
 ├── SpaceBar.xcodeproj
-└── SpaceBar/
-    ├── SpaceBarApp.swift
-    ├── Models/
-    ├── Services/
-    ├── Views/
-    └── Utilities/
+├── SpaceBar/
+│   ├── Models/
+│   ├── Services/
+│   ├── Views/
+│   └── Utilities/
+└── SpaceBarTests/
+    ├── PanelSnapshotTests.swift
+    ├── Support/
+    └── __Snapshots__/
 ```
 
 ## License
