@@ -1,0 +1,408 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		01A1AB7131A62BC2B593D888 /* CleanTarget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85C6247B9D220C9A63F60E28 /* CleanTarget.swift */; };
+		1759CBF373386EC4F837BAC1 /* MediaCaptureStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = E156FD66909011B512BC63B7 /* MediaCaptureStore.swift */; };
+		2506BF5BA7BF08B47E6CFE44 /* DiskSpaceMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35565FF659508C92C2775F2E /* DiskSpaceMonitor.swift */; };
+		297693A61FE7FE74DBD43732 /* CleanupPopoverView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24B79F7F0E02838A065C0E61 /* CleanupPopoverView.swift */; };
+		2E0E547DAAA9132854B1BA85 /* TrashService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8973D1CB7AD9599868EA5C3B /* TrashService.swift */; };
+		393A9BDF3EBB9B48DE98836F /* MediaCaptureBrowserView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47D5D858B7D5F0CDC288681B /* MediaCaptureBrowserView.swift */; };
+		47CFB6FC8B09080CDA915822 /* DirectorySizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1CB68FF59F6A97AA04658562 /* DirectorySizer.swift */; };
+		4B53D5E0807F31C8DD317017 /* MediaCaptureItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B45FD5F11DE38D0E8F8D21D /* MediaCaptureItem.swift */; };
+		5077F356A4AB558FAAFB3209 /* DiskSpaceBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = E957F3F3446FF4FEE2535887 /* DiskSpaceBar.swift */; };
+		520EA8B82A77732C367D86FD /* MediaCaptureScanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = F031A0625CF326FD4956D4E4 /* MediaCaptureScanner.swift */; };
+		5D964EB8DB065E7877D9B8C8 /* CleanTargetRegistry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9488E13FB89A188B8EFCB883 /* CleanTargetRegistry.swift */; };
+		6DE716BCF381CF6364339490 /* MenuBarStatusImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8105A1F2A00BA4AE8D3687DF /* MenuBarStatusImage.swift */; };
+		909FE14928058BED3E965A07 /* StatusItemController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15945E7F8C025E47046AB918 /* StatusItemController.swift */; };
+		9C12A6D0429097504101F953 /* StaleAgeCalculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B1F13914D08DDDD4601E508 /* StaleAgeCalculator.swift */; };
+		A0BCD9BB62D35B5C25DAF3E3 /* CleanupStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92E96DFFDDAEA8F264E42347 /* CleanupStore.swift */; };
+		A64941E7297DFBD974D55E21 /* CleanupRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B57ACD562316A61EEAC7416 /* CleanupRowView.swift */; };
+		AB3A733F91A3DA9BAEB1066F /* ByteFormatting.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2119658F7ECAC1DA45690B39 /* ByteFormatting.swift */; };
+		C481854918E82E7DE6EACBA7 /* CleanerService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8122BA709781AEF583A32463 /* CleanerService.swift */; };
+		F12C2DCCEF4A6D4ADA086B38 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 09671CEDD8638D2719F98666 /* Assets.xcassets */; };
+		F21E63A1AC0C755B8612DC32 /* SpaceBarApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2E384D077136B804F28F58F /* SpaceBarApp.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		09671CEDD8638D2719F98666 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		15945E7F8C025E47046AB918 /* StatusItemController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusItemController.swift; sourceTree = "<group>"; };
+		1B57ACD562316A61EEAC7416 /* CleanupRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CleanupRowView.swift; sourceTree = "<group>"; };
+		1CB68FF59F6A97AA04658562 /* DirectorySizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DirectorySizer.swift; sourceTree = "<group>"; };
+		2119658F7ECAC1DA45690B39 /* ByteFormatting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ByteFormatting.swift; sourceTree = "<group>"; };
+		24B79F7F0E02838A065C0E61 /* CleanupPopoverView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CleanupPopoverView.swift; sourceTree = "<group>"; };
+		35565FF659508C92C2775F2E /* DiskSpaceMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiskSpaceMonitor.swift; sourceTree = "<group>"; };
+		3B1F13914D08DDDD4601E508 /* StaleAgeCalculator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StaleAgeCalculator.swift; sourceTree = "<group>"; };
+		47D5D858B7D5F0CDC288681B /* MediaCaptureBrowserView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaCaptureBrowserView.swift; sourceTree = "<group>"; };
+		5B45FD5F11DE38D0E8F8D21D /* MediaCaptureItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaCaptureItem.swift; sourceTree = "<group>"; };
+		72E8F46CC6A165F69610E996 /* SpaceBar.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SpaceBar.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		8105A1F2A00BA4AE8D3687DF /* MenuBarStatusImage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarStatusImage.swift; sourceTree = "<group>"; };
+		8122BA709781AEF583A32463 /* CleanerService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CleanerService.swift; sourceTree = "<group>"; };
+		827BAE8E50426C97C34A38D7 /* SpaceBar.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = SpaceBar.entitlements; sourceTree = "<group>"; };
+		85C6247B9D220C9A63F60E28 /* CleanTarget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CleanTarget.swift; sourceTree = "<group>"; };
+		8973D1CB7AD9599868EA5C3B /* TrashService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrashService.swift; sourceTree = "<group>"; };
+		92E96DFFDDAEA8F264E42347 /* CleanupStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CleanupStore.swift; sourceTree = "<group>"; };
+		9488E13FB89A188B8EFCB883 /* CleanTargetRegistry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CleanTargetRegistry.swift; sourceTree = "<group>"; };
+		A1BE054789D4D50131C85361 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		A2E384D077136B804F28F58F /* SpaceBarApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpaceBarApp.swift; sourceTree = "<group>"; };
+		E156FD66909011B512BC63B7 /* MediaCaptureStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaCaptureStore.swift; sourceTree = "<group>"; };
+		E957F3F3446FF4FEE2535887 /* DiskSpaceBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiskSpaceBar.swift; sourceTree = "<group>"; };
+		F031A0625CF326FD4956D4E4 /* MediaCaptureScanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaCaptureScanner.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		228645FD8D5D55DF49699943 = {
+			isa = PBXGroup;
+			children = (
+				4CAEF3A671C632F553B2CF7E /* SpaceBar */,
+				62E01DC3E93AB3571F75FDC9 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		3E80FB7933CFC6522B48CDFF /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				8122BA709781AEF583A32463 /* CleanerService.swift */,
+				9488E13FB89A188B8EFCB883 /* CleanTargetRegistry.swift */,
+				92E96DFFDDAEA8F264E42347 /* CleanupStore.swift */,
+				1CB68FF59F6A97AA04658562 /* DirectorySizer.swift */,
+				35565FF659508C92C2775F2E /* DiskSpaceMonitor.swift */,
+				F031A0625CF326FD4956D4E4 /* MediaCaptureScanner.swift */,
+				E156FD66909011B512BC63B7 /* MediaCaptureStore.swift */,
+				3B1F13914D08DDDD4601E508 /* StaleAgeCalculator.swift */,
+				15945E7F8C025E47046AB918 /* StatusItemController.swift */,
+				8973D1CB7AD9599868EA5C3B /* TrashService.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		4CAEF3A671C632F553B2CF7E /* SpaceBar */ = {
+			isa = PBXGroup;
+			children = (
+				09671CEDD8638D2719F98666 /* Assets.xcassets */,
+				A1BE054789D4D50131C85361 /* Info.plist */,
+				827BAE8E50426C97C34A38D7 /* SpaceBar.entitlements */,
+				A2E384D077136B804F28F58F /* SpaceBarApp.swift */,
+				D719FA1B75B51522B5C6EC11 /* Models */,
+				3E80FB7933CFC6522B48CDFF /* Services */,
+				F1CC4368E1529484A8260BD2 /* Utilities */,
+				E286FC41D1C6177DD67182DC /* Views */,
+			);
+			path = SpaceBar;
+			sourceTree = "<group>";
+		};
+		62E01DC3E93AB3571F75FDC9 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				72E8F46CC6A165F69610E996 /* SpaceBar.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		D719FA1B75B51522B5C6EC11 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				85C6247B9D220C9A63F60E28 /* CleanTarget.swift */,
+				5B45FD5F11DE38D0E8F8D21D /* MediaCaptureItem.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		E286FC41D1C6177DD67182DC /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				24B79F7F0E02838A065C0E61 /* CleanupPopoverView.swift */,
+				1B57ACD562316A61EEAC7416 /* CleanupRowView.swift */,
+				E957F3F3446FF4FEE2535887 /* DiskSpaceBar.swift */,
+				47D5D858B7D5F0CDC288681B /* MediaCaptureBrowserView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		F1CC4368E1529484A8260BD2 /* Utilities */ = {
+			isa = PBXGroup;
+			children = (
+				2119658F7ECAC1DA45690B39 /* ByteFormatting.swift */,
+				8105A1F2A00BA4AE8D3687DF /* MenuBarStatusImage.swift */,
+			);
+			path = Utilities;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		6A88AF561F2C07634EB76F71 /* SpaceBar */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 9A86F8C3C4C8ACD7B0546B2B /* Build configuration list for PBXNativeTarget "SpaceBar" */;
+			buildPhases = (
+				63EEEE845C9B8DE035F8A895 /* Sources */,
+				C1B46A8ED5D2B0FE8506CC80 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = SpaceBar;
+			packageProductDependencies = (
+			);
+			productName = SpaceBar;
+			productReference = 72E8F46CC6A165F69610E996 /* SpaceBar.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		A371A0D33E582904442E5853 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					6A88AF561F2C07634EB76F71 = {
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 47D9072FD82751089FDD78E1 /* Build configuration list for PBXProject "SpaceBar" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 228645FD8D5D55DF49699943;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 62E01DC3E93AB3571F75FDC9 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				6A88AF561F2C07634EB76F71 /* SpaceBar */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		C1B46A8ED5D2B0FE8506CC80 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F12C2DCCEF4A6D4ADA086B38 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		63EEEE845C9B8DE035F8A895 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AB3A733F91A3DA9BAEB1066F /* ByteFormatting.swift in Sources */,
+				01A1AB7131A62BC2B593D888 /* CleanTarget.swift in Sources */,
+				5D964EB8DB065E7877D9B8C8 /* CleanTargetRegistry.swift in Sources */,
+				C481854918E82E7DE6EACBA7 /* CleanerService.swift in Sources */,
+				297693A61FE7FE74DBD43732 /* CleanupPopoverView.swift in Sources */,
+				A64941E7297DFBD974D55E21 /* CleanupRowView.swift in Sources */,
+				A0BCD9BB62D35B5C25DAF3E3 /* CleanupStore.swift in Sources */,
+				47CFB6FC8B09080CDA915822 /* DirectorySizer.swift in Sources */,
+				5077F356A4AB558FAAFB3209 /* DiskSpaceBar.swift in Sources */,
+				2506BF5BA7BF08B47E6CFE44 /* DiskSpaceMonitor.swift in Sources */,
+				393A9BDF3EBB9B48DE98836F /* MediaCaptureBrowserView.swift in Sources */,
+				4B53D5E0807F31C8DD317017 /* MediaCaptureItem.swift in Sources */,
+				520EA8B82A77732C367D86FD /* MediaCaptureScanner.swift in Sources */,
+				1759CBF373386EC4F837BAC1 /* MediaCaptureStore.swift in Sources */,
+				6DE716BCF381CF6364339490 /* MenuBarStatusImage.swift in Sources */,
+				F21E63A1AC0C755B8612DC32 /* SpaceBarApp.swift in Sources */,
+				9C12A6D0429097504101F953 /* StaleAgeCalculator.swift in Sources */,
+				909FE14928058BED3E965A07 /* StatusItemController.swift in Sources */,
+				2E0E547DAAA9132854B1BA85 /* TrashService.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		4584F6E72513331FD1C7DFAB /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		BA12D014D3A9C5D245955878 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = SpaceBar/SpaceBar.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = SpaceBar/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "@executable_path/../Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = com.spacebar.app;
+				PRODUCT_NAME = SpaceBar;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		BCA196540588B3AFBAF6ED95 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = SpaceBar/SpaceBar.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = SpaceBar/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "@executable_path/../Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = com.spacebar.app;
+				PRODUCT_NAME = SpaceBar;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		CFE18277C4C011BACC512B22 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		47D9072FD82751089FDD78E1 /* Build configuration list for PBXProject "SpaceBar" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				CFE18277C4C011BACC512B22 /* Debug */,
+				4584F6E72513331FD1C7DFAB /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		9A86F8C3C4C8ACD7B0546B2B /* Build configuration list for PBXNativeTarget "SpaceBar" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				BA12D014D3A9C5D245955878 /* Debug */,
+				BCA196540588B3AFBAF6ED95 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = A371A0D33E582904442E5853 /* Project object */;
+}
