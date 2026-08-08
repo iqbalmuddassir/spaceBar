@@ -39,7 +39,7 @@ enum TrashService {
           end if
         end tell
         """
-        if let error = runAppleScriptReturningError(script) {
+        if runAppleScriptReturningError(script) != nil {
             do {
                 try emptyDirectly()
             } catch {
@@ -91,13 +91,13 @@ enum TrashService {
         guard let output = runAppleScript(script), output != "ERR" else { return nil }
         let parts = output.split(separator: "|", maxSplits: 1).map(String.init)
         let count = Int(parts.first ?? "0") ?? 0
-        let size: UInt64
-        if parts.count > 1, let value = Double(parts[1].trimmingCharacters(in: .whitespacesAndNewlines)) {
-            size = UInt64(max(0, value.rounded()))
-        } else {
-            size = 0
+        let parsedSize: Double? = parts.count > 1
+            ? Double(parts[1].trimmingCharacters(in: .whitespacesAndNewlines))
+            : nil
+        let size = parsedSize.map { UInt64(max(0, $0.rounded())) } ?? 0
+        if count == 0 {
+            return TrashInfo(itemCount: 0, byteSize: 0)
         }
-        if count == 0 { return TrashInfo(itemCount: 0, byteSize: 0) }
         return TrashInfo(itemCount: count, byteSize: size)
     }
 
@@ -159,7 +159,9 @@ enum TrashService {
         do {
             try process.run()
             process.waitUntilExit()
-            if process.terminationStatus == 0 { return nil }
+            if process.terminationStatus == 0 {
+                return nil
+            }
             let message = String(data: err.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8)?
                 .trimmingCharacters(in: .whitespacesAndNewlines)
             return message?.isEmpty == false ? message : "Failed to empty Trash"

@@ -50,7 +50,9 @@ final class MediaCaptureStore: ObservableObject {
     }
 
     var summaryLabel: String {
-        if items.isEmpty { return "None found" }
+        if items.isEmpty {
+            return "None found"
+        }
         var parts: [String] = []
         if screenshotCount > 0 {
             parts.append("\(screenshotCount) screenshots (\(ByteFormatting.string(from: screenshotBytes)))")
@@ -89,7 +91,7 @@ final class MediaCaptureStore: ObservableObject {
 
     func openBrowser() {
         showBrowser = true
-        if items.isEmpty && !isScanning {
+        if items.isEmpty, !isScanning {
             scan()
         }
     }
@@ -178,7 +180,7 @@ final class MediaCaptureStore: ObservableObject {
         }
     }
 
-    nonisolated private static func forceRemove(_ url: URL) -> Bool {
+    private nonisolated static func forceRemove(_ url: URL) -> Bool {
         do {
             try FileManager.default.removeItem(at: url)
             return true

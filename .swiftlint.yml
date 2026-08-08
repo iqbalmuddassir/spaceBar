@@ -1,0 +1,79 @@
+# SwiftLint — https://github.com/realm/SwiftLint
+excluded:
+  - build
+  - DerivedData
+  - .swiftpm
+
+opt_in_rules:
+  - empty_count
+  - empty_string
+  - explicit_init
+  - first_where
+  - joined_default_parameter
+  - last_where
+  - literal_expression_end_indentation
+  - multiline_arguments
+  - multiline_parameters
+  - operator_usage_whitespace
+  - overridden_super_call
+  - prefer_self_type_over_type_of_self
+  - redundant_nil_coalescing
+  - sorted_imports
+  - toggle_bool
+  - vertical_whitespace_closing_braces
+  - yoda_condition
+
+disabled_rules:
+  - trailing_comma
+  - todo
+
+line_length:
+  warning: 120
+  error: 150
+  ignores_comments: true
+  ignores_urls: true
+
+file_length:
+  warning: 500
+  error: 800
+
+type_body_length:
+  warning: 300
+  error: 400
+
+function_body_length:
+  warning: 60
+  error: 100
+
+function_parameter_count:
+  warning: 6
+  error: 8
+
+cyclomatic_complexity:
+  warning: 12
+  error: 20
+
+identifier_name:
+  min_length:
+    warning: 2
+  max_length:
+    warning: 50
+    error: 60
+  excluded:
+    - id
+    - to
+    - ok
+    - on
+    - x
+    - y
+
+type_name:
+  min_length: 3
+  max_length:
+    warning: 50
+    error: 60
+
+nesting:
+  type_level: 2
+
+reporter: "xcode"

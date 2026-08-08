@@ -3,15 +3,15 @@ import Foundation
 enum ByteFormatting {
     /// Matches macOS System Settings Storage (SI / decimal: 1 GB = 1,000³ bytes).
     private static let formatter: ByteCountFormatter = {
-        let f = ByteCountFormatter()
-        f.countStyle = .decimal
-        f.allowsNonnumericFormatting = false
-        return f
+        let formatter = ByteCountFormatter()
+        formatter.countStyle = .decimal
+        formatter.allowsNonnumericFormatting = false
+        return formatter
     }()
 
     private static let gb = 1_000_000_000.0
     private static let mb = 1_000_000.0
-    private static let kb = 1_000.0
+    private static let kb = 1000.0
 
     static func string(from bytes: UInt64) -> String {
         formatter.string(fromByteCount: Int64(clamping: bytes))

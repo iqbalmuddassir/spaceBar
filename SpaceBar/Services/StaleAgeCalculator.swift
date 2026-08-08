@@ -13,7 +13,9 @@ enum StaleAgeCalculator {
         var samples = 0
 
         for url in urls {
-            if samples >= maxSamples { break }
+            if samples >= maxSamples {
+                break
+            }
             var isDir: ObjCBool = false
             guard fm.fileExists(atPath: url.path, isDirectory: &isDir) else { continue }
 
@@ -26,13 +28,15 @@ enum StaleAgeCalculator {
 
             guard isDir.boolValue,
                   let enumerator = fm.enumerator(
-                    at: url,
-                    includingPropertiesForKeys: [.contentModificationDateKey],
-                    options: [.skipsHiddenFiles]
+                      at: url,
+                      includingPropertiesForKeys: [.contentModificationDateKey],
+                      options: [.skipsHiddenFiles]
                   ) else { continue }
 
             for case let fileURL as URL in enumerator {
-                if samples >= maxSamples { break }
+                if samples >= maxSamples {
+                    break
+                }
                 samples += 1
                 if let date = modificationDate(of: fileURL) {
                     if newest == nil || date > newest! {
@@ -55,15 +59,17 @@ enum StaleAgeCalculator {
         let day = 24 * hour
 
         if seconds < hour {
-            let m = max(1, seconds / minute)
-            return "last modified \(m)m ago"
+            let minutes = max(1, seconds / minute)
+            return "last modified \(minutes)m ago"
         }
         if seconds < day {
-            let h = seconds / hour
-            return "last modified \(h)h ago"
+            let hours = seconds / hour
+            return "last modified \(hours)h ago"
         }
-        let d = seconds / day
-        if d == 1 { return "last modified 1d ago" }
-        return "last modified \(d)d ago"
+        let days = seconds / day
+        if days == 1 {
+            return "last modified 1d ago"
+        }
+        return "last modified \(days)d ago"
     }
 }

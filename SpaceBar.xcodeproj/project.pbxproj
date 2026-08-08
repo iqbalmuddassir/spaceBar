@@ -25,6 +25,7 @@
 		A64941E7297DFBD974D55E21 /* CleanupRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B57ACD562316A61EEAC7416 /* CleanupRowView.swift */; };
 		AB3A733F91A3DA9BAEB1066F /* ByteFormatting.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2119658F7ECAC1DA45690B39 /* ByteFormatting.swift */; };
 		C481854918E82E7DE6EACBA7 /* CleanerService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8122BA709781AEF583A32463 /* CleanerService.swift */; };
+		E5575CCBD79A603E5F1FB316 /* CommandSizeEstimator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9DDF70B8C233590CEB4568C2 /* CommandSizeEstimator.swift */; };
 		F12C2DCCEF4A6D4ADA086B38 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 09671CEDD8638D2719F98666 /* Assets.xcassets */; };
 		F21E63A1AC0C755B8612DC32 /* SpaceBarApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2E384D077136B804F28F58F /* SpaceBarApp.swift */; };
 /* End PBXBuildFile section */
@@ -48,6 +49,7 @@
 		8973D1CB7AD9599868EA5C3B /* TrashService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrashService.swift; sourceTree = "<group>"; };
 		92E96DFFDDAEA8F264E42347 /* CleanupStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CleanupStore.swift; sourceTree = "<group>"; };
 		9488E13FB89A188B8EFCB883 /* CleanTargetRegistry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CleanTargetRegistry.swift; sourceTree = "<group>"; };
+		9DDF70B8C233590CEB4568C2 /* CommandSizeEstimator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandSizeEstimator.swift; sourceTree = "<group>"; };
 		A1BE054789D4D50131C85361 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		A2E384D077136B804F28F58F /* SpaceBarApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpaceBarApp.swift; sourceTree = "<group>"; };
 		E156FD66909011B512BC63B7 /* MediaCaptureStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaCaptureStore.swift; sourceTree = "<group>"; };
@@ -70,6 +72,7 @@
 				8122BA709781AEF583A32463 /* CleanerService.swift */,
 				9488E13FB89A188B8EFCB883 /* CleanTargetRegistry.swift */,
 				92E96DFFDDAEA8F264E42347 /* CleanupStore.swift */,
+				9DDF70B8C233590CEB4568C2 /* CommandSizeEstimator.swift */,
 				1CB68FF59F6A97AA04658562 /* DirectorySizer.swift */,
 				35565FF659508C92C2775F2E /* DiskSpaceMonitor.swift */,
 				F031A0625CF326FD4956D4E4 /* MediaCaptureScanner.swift */,
@@ -140,6 +143,8 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 9A86F8C3C4C8ACD7B0546B2B /* Build configuration list for PBXNativeTarget "SpaceBar" */;
 			buildPhases = (
+				52BC20C54EA2949D8E3221DD /* SwiftFormat */,
+				D912E4E54E3AD51E4FD3C50A /* SwiftLint */,
 				63EEEE845C9B8DE035F8A895 /* Sources */,
 				C1B46A8ED5D2B0FE8506CC80 /* Resources */,
 			);
@@ -198,6 +203,47 @@
 		};
 /* End PBXResourcesBuildPhase section */
 
+/* Begin PBXShellScriptBuildPhase section */
+		52BC20C54EA2949D8E3221DD /* SwiftFormat */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = SwiftFormat;
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "export PATH=\"/opt/homebrew/bin:/usr/local/bin:$PATH\"\nif which swiftformat >/dev/null; then\n  swiftformat \"${SRCROOT}/SpaceBar\" --config \"${SRCROOT}/.swiftformat\"\nelse\n  echo \"warning: SwiftFormat not installed (brew install swiftformat)\"\nfi\n";
+		};
+		D912E4E54E3AD51E4FD3C50A /* SwiftLint */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = SwiftLint;
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "export PATH=\"/opt/homebrew/bin:/usr/local/bin:$PATH\"\nif which swiftlint >/dev/null; then\n  swiftlint lint --config \"${SRCROOT}/.swiftlint.yml\" --strict \"${SRCROOT}/SpaceBar\"\nelse\n  echo \"warning: SwiftLint not installed (brew install swiftlint)\"\nfi\n";
+		};
+/* End PBXShellScriptBuildPhase section */
+
 /* Begin PBXSourcesBuildPhase section */
 		63EEEE845C9B8DE035F8A895 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
@@ -210,6 +256,7 @@
 				297693A61FE7FE74DBD43732 /* CleanupPopoverView.swift in Sources */,
 				A64941E7297DFBD974D55E21 /* CleanupRowView.swift in Sources */,
 				A0BCD9BB62D35B5C25DAF3E3 /* CleanupStore.swift in Sources */,
+				E5575CCBD79A603E5F1FB316 /* CommandSizeEstimator.swift in Sources */,
 				47CFB6FC8B09080CDA915822 /* DirectorySizer.swift in Sources */,
 				5077F356A4AB558FAAFB3209 /* DiskSpaceBar.swift in Sources */,
 				2506BF5BA7BF08B47E6CFE44 /* DiskSpaceMonitor.swift in Sources */,
@@ -292,12 +339,14 @@
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
+				GCC_TREAT_WARNINGS_AS_ERRORS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = SpaceBar/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/../Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = com.spacebar.app;
 				PRODUCT_NAME = SpaceBar;
 				SDKROOT = macosx;
+				SWIFT_TREAT_WARNINGS_AS_ERRORS = YES;
 			};
 			name = Debug;
 		};
@@ -309,12 +358,14 @@
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
+				GCC_TREAT_WARNINGS_AS_ERRORS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = SpaceBar/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/../Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = com.spacebar.app;
 				PRODUCT_NAME = SpaceBar;
 				SDKROOT = macosx;
+				SWIFT_TREAT_WARNINGS_AS_ERRORS = YES;
 			};
 			name = Release;
 		};

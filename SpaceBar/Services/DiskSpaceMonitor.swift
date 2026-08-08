@@ -1,26 +1,26 @@
-import Foundation
-import Combine
-import SwiftUI
 import AppKit
+import Combine
+import Foundation
+import SwiftUI
 
 enum DiskSpaceLevel: Equatable {
-    case healthy   // free > 50%
-    case warning   // free < 50%
-    case critical  // free < 10%
+    case healthy // free > 50%
+    case warning // free < 50%
+    case critical // free < 10%
 
     var color: Color {
         switch self {
-        case .healthy: return .green
-        case .warning: return .orange
-        case .critical: return .red
+        case .healthy: .green
+        case .warning: .orange
+        case .critical: .red
         }
     }
 
     var label: String {
         switch self {
-        case .healthy: return "Plenty of space"
-        case .warning: return "Running low"
-        case .critical: return "Critically low"
+        case .healthy: "Plenty of space"
+        case .warning: "Running low"
+        case .critical: "Critically low"
         }
     }
 }
@@ -33,7 +33,7 @@ final class DiskSpaceMonitor: ObservableObject {
     @Published private(set) var freePercentLabel: String = "…"
     @Published private(set) var freeFraction: Double = 1
     @Published private(set) var level: DiskSpaceLevel = .healthy
-    @Published private(set) var menuBarImage: NSImage = NSImage(size: NSSize(width: 1, height: 1))
+    @Published private(set) var menuBarImage: NSImage = .init(size: NSSize(width: 1, height: 1))
 
     private var timer: Timer?
 

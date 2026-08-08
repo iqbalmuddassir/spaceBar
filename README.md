@@ -17,6 +17,14 @@ Menu bar utility for macOS that shows free disk space and helps reclaim storage 
 - macOS 14+
 - Xcode 15+ (or newer)
 - [XcodeGen](https://github.com/yonaskolb/XcodeGen) (`brew install xcodegen`) to regenerate the project from `project.yml`
+- [SwiftFormat](https://github.com/nicklockwood/SwiftFormat) (`brew install swiftformat`) — runs on every build
+- [SwiftLint](https://github.com/realm/SwiftLint) (`brew install swiftlint`) — runs on every build (`--strict`)
+
+```bash
+# Format + lint locally
+swiftformat SpaceBar --config .swiftformat
+swiftlint lint --config .swiftlint.yml --strict SpaceBar
+```
 
 ## Build & run
 

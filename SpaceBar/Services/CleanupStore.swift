@@ -74,7 +74,9 @@ final class CleanupStore: ObservableObject {
                 }
 
                 for await (id, scanned) in group {
-                    if Task.isCancelled { return }
+                    if Task.isCancelled {
+                        return
+                    }
                     completed += 1
                     collected[id] = scanned
                     self.scanProgress = Double(completed) / total
@@ -105,9 +107,8 @@ final class CleanupStore: ObservableObject {
         let regular = visible.filter { !$0.target.isPermanent }.sorted { $0.byteSize > $1.byteSize }
         let trash = visible.filter(\.target.isPermanent)
         let next = regular + trash
-        let merged: [TargetScanResult]
-        if preserveBusyPhases {
-            merged = next.map { item -> TargetScanResult in
+        let merged: [TargetScanResult] = if preserveBusyPhases {
+            next.map { item -> TargetScanResult in
                 guard let current = results.first(where: { $0.id == item.id }) else { return item }
                 switch current.phase {
                 case .deleting, .success:
@@ -119,7 +120,7 @@ final class CleanupStore: ObservableObject {
                 }
             }
         } else {
-            merged = next
+            next
         }
         if animated {
             withAnimation(.snappy(duration: 0.28)) {
@@ -222,11 +223,10 @@ final class CleanupStore: ObservableObject {
             if cleanerError.isPermissionRelated, !hasFDA {
                 showFullDiskAccessPrompt = true
             }
-            let message: String
-            if cleanerError.isPermissionRelated, hasFDA {
-                message = "Some items are locked or in use. Quit related apps and retry."
+            let message: String = if cleanerError.isPermissionRelated, hasFDA {
+                "Some items are locked or in use. Quit related apps and retry."
             } else {
-                message = cleanerError.localizedDescription
+                cleanerError.localizedDescription
             }
             setStatus(message)
             if let index = results.firstIndex(where: { $0.id == target.id }) {
@@ -241,22 +241,33 @@ final class CleanupStore: ObservableObject {
     private func scan(target: CleanTarget) async -> TargetScanResult? {
         await Task.detached(priority: .utility) {
             switch target.strategy {
-            case .deletePaths(let urls):
+            case let .deletePaths(urls):
                 let existing = urls.filter { FileManager.default.fileExists(atPath: $0.path) }
                 guard !existing.isEmpty else {
-                    return TargetScanResult(target: target, byteSize: 0, staleDescription: nil, phase: .ready, errorMessage: nil)
+                    return TargetScanResult(
+                        target: target,
+                        byteSize: 0,
+                        staleDescription: nil,
+                        phase: .ready,
+                        errorMessage: nil
+                    )
                 }
                 let size = DirectorySizer.size(of: existing)
                 let stale = StaleAgeCalculator.staleDescription(for: existing)
-                return TargetScanResult(target: target, byteSize: size, staleDescription: stale, phase: .ready, errorMessage: nil)
+                return TargetScanResult(
+                    target: target,
+                    byteSize: size,
+                    staleDescription: stale,
+                    phase: .ready,
+                    errorMessage: nil
+                )
 
             case .emptyTrash:
                 let info = TrashService.info()
-                let stale: String?
-                if info.itemCount > 0 {
-                    stale = info.itemCount == 1 ? "1 item" : "\(info.itemCount) items"
+                let stale: String? = if info.itemCount > 0 {
+                    info.itemCount == 1 ? "1 item" : "\(info.itemCount) items"
                 } else {
-                    stale = nil
+                    nil
                 }
                 return TargetScanResult(
                     target: target,
@@ -268,83 +279,25 @@ final class CleanupStore: ObservableObject {
                 )
 
             case .simctlDeleteUnavailable:
-                let size = Self.estimateSimulatorUnavailableSize()
-                return TargetScanResult(target: target, byteSize: size, staleDescription: nil, phase: .ready, errorMessage: nil)
+                let size = CommandSizeEstimator.simulatorUnavailableSize()
+                return TargetScanResult(
+                    target: target,
+                    byteSize: size,
+                    staleDescription: nil,
+                    phase: .ready,
+                    errorMessage: nil
+                )
 
             case .dockerBuilderPrune:
-                let size = Self.estimateDockerBuildCacheSize()
-                return TargetScanResult(target: target, byteSize: size, staleDescription: nil, phase: .ready, errorMessage: nil)
+                let size = CommandSizeEstimator.dockerBuildCacheSize()
+                return TargetScanResult(
+                    target: target,
+                    byteSize: size,
+                    staleDescription: nil,
+                    phase: .ready,
+                    errorMessage: nil
+                )
             }
         }.value
-    }
-
-    nonisolated private static func estimateSimulatorUnavailableSize() -> UInt64 {
-        let home = FileManager.default.homeDirectoryForCurrentUser
-        let devices = home.appendingPathComponent("Library/Developer/CoreSimulator/Devices", isDirectory: true)
-        guard FileManager.default.fileExists(atPath: devices.path) else { return 0 }
-
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/usr/bin/xcrun")
-        process.arguments = ["simctl", "list", "devices", "unavailable"]
-        let pipe = Pipe()
-        process.standardOutput = pipe
-        process.standardError = Pipe()
-        do {
-            try process.run()
-            process.waitUntilExit()
-            let output = String(data: pipe.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
-            let lines = output.split(separator: "\n").filter { line in
-                let s = line.trimmingCharacters(in: .whitespaces)
-                return !s.isEmpty && !s.hasPrefix("--") && !s.hasPrefix("==")
-            }
-            guard !lines.isEmpty else { return 0 }
-
-            var total: UInt64 = 0
-            let uuidPattern = #/[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}/#
-            for line in lines {
-                if let match = line.firstMatch(of: uuidPattern) {
-                    let uuid = String(match.output)
-                    let dir = devices.appendingPathComponent(uuid, isDirectory: true)
-                    total += DirectorySizer.size(of: dir)
-                }
-            }
-            return total
-        } catch {
-            return 0
-        }
-    }
-
-    nonisolated private static func estimateDockerBuildCacheSize() -> UInt64 {
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/usr/bin/env")
-        process.arguments = ["docker", "system", "df", "--format", "{{.Type}} {{.Size}}"]
-        let pipe = Pipe()
-        process.standardOutput = pipe
-        process.standardError = Pipe()
-        do {
-            try process.run()
-            process.waitUntilExit()
-            guard process.terminationStatus == 0 else { return 0 }
-            let output = String(data: pipe.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
-            for line in output.split(separator: "\n") {
-                if line.lowercased().contains("build cache") {
-                    return parseDockerSize(String(line.split(separator: " ").last ?? "0"))
-                }
-            }
-            return 0
-        } catch {
-            return 0
-        }
-    }
-
-    nonisolated private static func parseDockerSize(_ raw: String) -> UInt64 {
-        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
-        let numberPart = String(trimmed.prefix(while: { $0.isNumber || $0 == "." || $0 == "," }))
-            .replacingOccurrences(of: ",", with: "")
-        guard let value = Double(numberPart) else { return 0 }
-        if trimmed.contains("GB") { return UInt64(value * 1_000_000_000) }
-        if trimmed.contains("MB") { return UInt64(value * 1_000_000) }
-        if trimmed.contains("KB") { return UInt64(value * 1_000) }
-        return UInt64(value)
     }
 }

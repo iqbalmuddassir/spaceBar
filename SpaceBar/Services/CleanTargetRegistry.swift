@@ -8,9 +8,18 @@ enum CleanTargetRegistry {
         let developer = library.appendingPathComponent("Developer/Xcode", isDirectory: true)
 
         var targets: [CleanTarget] = []
+        targets.append(contentsOf: generalTargets(home: home, caches: caches))
+        targets.append(contentsOf: xcodeTargets(developer: developer))
+        targets.append(contentsOf: androidAndBuildTargets(home: home))
+        targets.append(contentsOf: packageManagerTargets(home: home, caches: caches))
+        targets.append(contentsOf: optionalToolTargets(home: home, caches: caches))
+        targets.append(emptyTrashTarget())
+        return targets
+    }
 
+    private static func generalTargets(home: URL, caches: URL) -> [CleanTarget] {
         let tmp = URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
-        targets.append(
+        return [
             CleanTarget(
                 id: "user-temp",
                 name: "User Temporary Files",
@@ -19,10 +28,7 @@ enum CleanTargetRegistry {
                 strategy: .deletePaths([tmp]),
                 requiresStrongConfirm: false,
                 isPermanent: false
-            )
-        )
-
-        targets.append(
+            ),
             CleanTarget(
                 id: "app-caches",
                 name: "App Caches",
@@ -32,10 +38,14 @@ enum CleanTargetRegistry {
                 requiresStrongConfirm: false,
                 isPermanent: false
             )
-        )
+        ]
+    }
 
+    private static func xcodeTargets(developer: URL) -> [CleanTarget] {
         let derivedData = developer.appendingPathComponent("DerivedData", isDirectory: true)
-        targets.append(
+        let archives = developer.appendingPathComponent("Archives", isDirectory: true)
+        let deviceSupport = developer.appendingPathComponent("iOS DeviceSupport", isDirectory: true)
+        return [
             CleanTarget(
                 id: "xcode-derived",
                 name: "Xcode DerivedData",
@@ -44,11 +54,7 @@ enum CleanTargetRegistry {
                 strategy: .deletePaths([derivedData]),
                 requiresStrongConfirm: false,
                 isPermanent: false
-            )
-        )
-
-        let archives = developer.appendingPathComponent("Archives", isDirectory: true)
-        targets.append(
+            ),
             CleanTarget(
                 id: "xcode-archives",
                 name: "Xcode Archives",
@@ -57,11 +63,7 @@ enum CleanTargetRegistry {
                 strategy: .deletePaths([archives]),
                 requiresStrongConfirm: true,
                 isPermanent: false
-            )
-        )
-
-        let deviceSupport = developer.appendingPathComponent("iOS DeviceSupport", isDirectory: true)
-        targets.append(
+            ),
             CleanTarget(
                 id: "xcode-devicesupport",
                 name: "Xcode iOS DeviceSupport",
@@ -70,10 +72,7 @@ enum CleanTargetRegistry {
                 strategy: .deletePaths([deviceSupport]),
                 requiresStrongConfirm: false,
                 isPermanent: false
-            )
-        )
-
-        targets.append(
+            ),
             CleanTarget(
                 id: "simctl-unavailable",
                 name: "Unavailable iOS Simulators",
@@ -83,10 +82,13 @@ enum CleanTargetRegistry {
                 requiresStrongConfirm: false,
                 isPermanent: false
             )
-        )
+        ]
+    }
 
+    private static func androidAndBuildTargets(home: URL) -> [CleanTarget] {
         let avd = home.appendingPathComponent(".android/avd", isDirectory: true)
-        targets.append(
+        let gradle = home.appendingPathComponent(".gradle/caches", isDirectory: true)
+        return [
             CleanTarget(
                 id: "android-avds",
                 name: "Android AVDs",
@@ -95,11 +97,7 @@ enum CleanTargetRegistry {
                 strategy: .deletePaths([avd]),
                 requiresStrongConfirm: true,
                 isPermanent: false
-            )
-        )
-
-        let gradle = home.appendingPathComponent(".gradle/caches", isDirectory: true)
-        targets.append(
+            ),
             CleanTarget(
                 id: "gradle-caches",
                 name: "Gradle Caches",
@@ -109,10 +107,14 @@ enum CleanTargetRegistry {
                 requiresStrongConfirm: false,
                 isPermanent: false
             )
-        )
+        ]
+    }
 
+    private static func packageManagerTargets(home: URL, caches: URL) -> [CleanTarget] {
         let cocoapods = caches.appendingPathComponent("CocoaPods", isDirectory: true)
-        targets.append(
+        let spm = caches.appendingPathComponent("org.swift.swiftpm", isDirectory: true)
+        let npm = home.appendingPathComponent(".npm/_cacache", isDirectory: true)
+        var targets = [
             CleanTarget(
                 id: "cocoapods",
                 name: "CocoaPods Cache",
@@ -121,11 +123,7 @@ enum CleanTargetRegistry {
                 strategy: .deletePaths([cocoapods]),
                 requiresStrongConfirm: false,
                 isPermanent: false
-            )
-        )
-
-        let spm = caches.appendingPathComponent("org.swift.swiftpm", isDirectory: true)
-        targets.append(
+            ),
             CleanTarget(
                 id: "swiftpm",
                 name: "Swift Package Manager Cache",
@@ -134,11 +132,7 @@ enum CleanTargetRegistry {
                 strategy: .deletePaths([spm]),
                 requiresStrongConfirm: false,
                 isPermanent: false
-            )
-        )
-
-        let npm = home.appendingPathComponent(".npm/_cacache", isDirectory: true)
-        targets.append(
+            ),
             CleanTarget(
                 id: "npm",
                 name: "npm Cache",
@@ -148,7 +142,7 @@ enum CleanTargetRegistry {
                 requiresStrongConfirm: false,
                 isPermanent: false
             )
-        )
+        ]
 
         if let pnpmStore = detectPnpmStore() {
             targets.append(
@@ -163,9 +157,14 @@ enum CleanTargetRegistry {
                 )
             )
         }
+        return targets
+    }
 
+    private static func optionalToolTargets(home: URL, caches: URL) -> [CleanTarget] {
         let brew = caches.appendingPathComponent("Homebrew", isDirectory: true)
-        targets.append(
+        let uvCache = uvCacheURL(home: home)
+        let pip = caches.appendingPathComponent("pip", isDirectory: true)
+        var targets = [
             CleanTarget(
                 id: "homebrew",
                 name: "Homebrew Cache",
@@ -174,11 +173,7 @@ enum CleanTargetRegistry {
                 strategy: .deletePaths([brew]),
                 requiresStrongConfirm: false,
                 isPermanent: false
-            )
-        )
-
-        let uvCache = uvCacheURL(home: home)
-        targets.append(
+            ),
             CleanTarget(
                 id: "uv-cache",
                 name: "uv Cache",
@@ -187,11 +182,7 @@ enum CleanTargetRegistry {
                 strategy: .deletePaths([uvCache]),
                 requiresStrongConfirm: false,
                 isPermanent: false
-            )
-        )
-
-        let pip = caches.appendingPathComponent("pip", isDirectory: true)
-        targets.append(
+            ),
             CleanTarget(
                 id: "pip",
                 name: "pip Cache",
@@ -201,7 +192,7 @@ enum CleanTargetRegistry {
                 requiresStrongConfirm: false,
                 isPermanent: false
             )
-        )
+        ]
 
         if dockerAvailable() {
             targets.append(
@@ -216,21 +207,19 @@ enum CleanTargetRegistry {
                 )
             )
         }
-
-        let trash = home.appendingPathComponent(".Trash", isDirectory: true)
-        targets.append(
-            CleanTarget(
-                id: "empty-trash",
-                name: "Empty Trash",
-                subtitle: "Finder Trash",
-                safetyNote: "Permanently deletes all items currently in Trash.",
-                strategy: .emptyTrash,
-                requiresStrongConfirm: true,
-                isPermanent: true
-            )
-        )
-
         return targets
+    }
+
+    private static func emptyTrashTarget() -> CleanTarget {
+        CleanTarget(
+            id: "empty-trash",
+            name: "Empty Trash",
+            subtitle: "Finder Trash",
+            safetyNote: "Permanently deletes all items currently in Trash.",
+            strategy: .emptyTrash,
+            requiresStrongConfirm: true,
+            isPermanent: true
+        )
     }
 
     private static func tildePath(_ url: URL) -> String {
@@ -246,7 +235,6 @@ enum CleanTargetRegistry {
         "com.apple.bird",
         "com.apple.findmy",
         "com.apple.homed",
-        // Covered by dedicated targets
         "CocoaPods",
         "org.swift.swiftpm",
         "Homebrew",
@@ -254,8 +242,8 @@ enum CleanTargetRegistry {
     ]
 
     private static func safeCacheChildren(of caches: URL) -> [URL] {
-        let fm = FileManager.default
-        guard let children = try? fm.contentsOfDirectory(
+        let fileManager = FileManager.default
+        guard let children = try? fileManager.contentsOfDirectory(
             at: caches,
             includingPropertiesForKeys: [.isDirectoryKey],
             options: [.skipsHiddenFiles]
@@ -263,8 +251,12 @@ enum CleanTargetRegistry {
 
         return children.filter { url in
             let name = url.lastPathComponent
-            if skippedCacheNames.contains(name) { return false }
-            if name.hasPrefix("com.apple.") { return false }
+            if skippedCacheNames.contains(name) {
+                return false
+            }
+            if name.hasPrefix("com.apple.") {
+                return false
+            }
             return true
         }
     }
@@ -290,7 +282,7 @@ enum CleanTargetRegistry {
             let data = pipe.fileHandleForReading.readDataToEndOfFile()
             guard let path = String(data: data, encoding: .utf8)?
                 .trimmingCharacters(in: .whitespacesAndNewlines),
-                  !path.isEmpty else { return nil }
+                !path.isEmpty else { return nil }
             let url = URL(fileURLWithPath: path, isDirectory: true)
             return FileManager.default.fileExists(atPath: url.path) ? url : nil
         } catch {

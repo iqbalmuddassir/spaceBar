@@ -10,18 +10,20 @@ enum CleanerError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .permissionDenied:
-            return "Permission denied. Grant Full Disk Access to SpaceBar in System Settings."
-        case .commandFailed(let message):
-            return message
-        case .unknown(let message):
-            return message
-        case .nothingDeleted(let message):
-            return message
+            "Permission denied. Grant Full Disk Access to SpaceBar in System Settings."
+        case let .commandFailed(message):
+            message
+        case let .unknown(message):
+            message
+        case let .nothingDeleted(message):
+            message
         }
     }
 
     var isPermissionRelated: Bool {
-        if case .permissionDenied = self { return true }
+        if case .permissionDenied = self {
+            return true
+        }
         return false
     }
 }
@@ -32,13 +34,15 @@ struct CleanResult: Sendable {
     let deletedEntries: Int
     let failedEntries: Int
 
-    var bytesFreed: UInt64 { bytesBefore > bytesAfter ? bytesBefore - bytesAfter : 0 }
+    var bytesFreed: UInt64 {
+        bytesBefore > bytesAfter ? bytesBefore - bytesAfter : 0
+    }
 }
 
 enum CleanerService {
     static func clean(_ target: CleanTarget) throws -> CleanResult {
         switch target.strategy {
-        case .deletePaths(let urls):
+        case let .deletePaths(urls):
             return try deleteContents(of: urls)
         case .emptyTrash:
             let before = TrashService.info().byteSize
@@ -58,10 +62,10 @@ enum CleanerService {
 
     private static func estimateOrZero(_ target: CleanTarget) -> UInt64 {
         switch target.strategy {
-        case .deletePaths(let urls):
-            return DirectorySizer.size(of: urls)
+        case let .deletePaths(urls):
+            DirectorySizer.size(of: urls)
         default:
-            return 0
+            0
         }
     }
 
@@ -155,8 +159,9 @@ enum CleanerService {
                 } else {
                     failed += 1
                     lastError = item.lastPathComponent
-                    if !FileManager.default.isWritableFile(atPath: item.path)
-                        || !hasFullDiskAccess() && item.path.contains("/Library/") {
+                    let lacksWrite = !FileManager.default.isWritableFile(atPath: item.path)
+                    let likelyFDA = !hasFullDiskAccess() && item.path.contains("/Library/")
+                    if lacksWrite || likelyFDA {
                         permissionFails += 1
                     }
                 }
@@ -167,14 +172,14 @@ enum CleanerService {
         let result = CleanResult(bytesBefore: before, bytesAfter: after, deletedEntries: deleted, failedEntries: failed)
 
         if deleted == 0 {
-            if permissionFails > 0 && !hasFullDiskAccess() {
+            if permissionFails > 0, !hasFullDiskAccess() {
                 throw CleanerError.permissionDenied
             }
             throw CleanerError.nothingDeleted(lastError.map { "Could not delete \($0)" } ?? "Nothing was deleted.")
         }
 
         // If we deleted entries but measured size barely moved and everything still exists, call it out.
-        if result.bytesFreed == 0 && failed > deleted {
+        if result.bytesFreed == 0, failed > deleted {
             throw CleanerError.nothingDeleted("Files are locked or protected. Quit related apps and try again.")
         }
 
@@ -186,7 +191,7 @@ enum CleanerService {
         var isDir: ObjCBool = false
         guard fm.fileExists(atPath: url.path, isDirectory: &isDir) else { return [] }
 
-        if isDir.boolValue && shouldDeleteChildren(of: url) {
+        if isDir.boolValue, shouldDeleteChildren(of: url) {
             do {
                 return try fm.contentsOfDirectory(at: url, includingPropertiesForKeys: nil, options: [])
             } catch {
@@ -258,7 +263,8 @@ enum CleanerService {
         guard process.terminationStatus == 0 else {
             let message = String(data: err.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8)?
                 .trimmingCharacters(in: .whitespacesAndNewlines)
-            throw CleanerError.commandFailed(message?.isEmpty == false ? message! : "Command failed (\(process.terminationStatus))")
+            throw CleanerError
+                .commandFailed(message?.isEmpty == false ? message! : "Command failed (\(process.terminationStatus))")
         }
     }
 }

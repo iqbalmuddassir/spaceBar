@@ -109,7 +109,9 @@ enum MediaCaptureScanner {
 
     private static func depthLimit(for dir: URL) -> Int {
         let name = dir.lastPathComponent.lowercased()
-        if name == "pictures" || name == "movies" { return 2 }
+        if name == "pictures" || name == "movies" {
+            return 2
+        }
         return 1
     }
 
@@ -118,20 +120,20 @@ enum MediaCaptureScanner {
         let lower = name.lowercased()
         let ext = url.pathExtension.lowercased()
 
-        let recordingExts: Set<String> = ["mov", "mp4", "m4v"]
-        let imageExts: Set<String> = ["png", "jpg", "jpeg", "heic"]
+        let recordingExts: Set = ["mov", "mp4", "m4v"]
+        let imageExts: Set = ["png", "jpg", "jpeg", "heic"]
 
-        if lower.hasPrefix("screen recording") && recordingExts.contains(ext) {
+        if lower.hasPrefix("screen recording"), recordingExts.contains(ext) {
             return .recording
         }
-        if (lower.hasPrefix("screenshot") || lower.hasPrefix("screen shot")) && imageExts.contains(ext) {
+        if lower.hasPrefix("screenshot") || lower.hasPrefix("screen shot"), imageExts.contains(ext) {
             return .screenshot
         }
         // Localized / newer patterns
-        if lower.contains("screenshot") && imageExts.contains(ext) {
+        if lower.contains("screenshot"), imageExts.contains(ext) {
             return .screenshot
         }
-        if lower.contains("screen recording") && recordingExts.contains(ext) {
+        if lower.contains("screen recording"), recordingExts.contains(ext) {
             return .recording
         }
         return nil

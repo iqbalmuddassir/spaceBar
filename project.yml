@@ -26,5 +26,26 @@ targets:
         LD_RUNPATH_SEARCH_PATHS: "@executable_path/../Frameworks"
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         GENERATE_INFOPLIST_FILE: NO
+        SWIFT_TREAT_WARNINGS_AS_ERRORS: YES
+        GCC_TREAT_WARNINGS_AS_ERRORS: YES
     entitlements:
       path: SpaceBar/SpaceBar.entitlements
+    preBuildScripts:
+      - name: SwiftFormat
+        basedOnDependencyAnalysis: false
+        script: |
+          export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
+          if which swiftformat >/dev/null; then
+            swiftformat "${SRCROOT}/SpaceBar" --config "${SRCROOT}/.swiftformat"
+          else
+            echo "warning: SwiftFormat not installed (brew install swiftformat)"
+          fi
+      - name: SwiftLint
+        basedOnDependencyAnalysis: false
+        script: |
+          export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
+          if which swiftlint >/dev/null; then
+            swiftlint lint --config "${SRCROOT}/.swiftlint.yml" --strict "${SRCROOT}/SpaceBar"
+          else
+            echo "warning: SwiftLint not installed (brew install swiftlint)"
+          fi

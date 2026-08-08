@@ -84,10 +84,15 @@ struct CleanupPopoverView: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
-                Text("If SpaceBar is already enabled, turn it off and on again, then quit and reopen this app. Ad-hoc debug builds need a fresh grant after rebuilds.")
-                    .font(.caption2)
-                    .foregroundStyle(.tertiary)
-                    .fixedSize(horizontal: false, vertical: true)
+                Text(
+                    """
+                    If SpaceBar is already enabled, turn it off and on again, then quit and reopen this app. \
+                    Ad-hoc debug builds need a fresh grant after rebuilds.
+                    """
+                )
+                .font(.caption2)
+                .foregroundStyle(.tertiary)
+                .fixedSize(horizontal: false, vertical: true)
 
                 Text("Running: \(Bundle.main.bundlePath)")
                     .font(.system(size: 9, design: .monospaced))
@@ -170,20 +175,20 @@ struct CleanupPopoverView: View {
                         .font(.headline)
                 }
                 Spacer()
-            Button {
-                store.scanAll(clearExisting: true)
-                mediaStore.scan()
-                diskMonitor.refresh()
-            } label: {
-                Image(systemName: "arrow.clockwise")
-                    .rotationEffect(.degrees(store.isScanning ? 360 : 0))
-                    .animation(
-                        store.isScanning
-                            ? .linear(duration: 1).repeatForever(autoreverses: false)
-                            : .default,
-                        value: store.isScanning
-                    )
-            }
+                Button {
+                    store.scanAll(clearExisting: true)
+                    mediaStore.scan()
+                    diskMonitor.refresh()
+                } label: {
+                    Image(systemName: "arrow.clockwise")
+                        .rotationEffect(.degrees(store.isScanning ? 360 : 0))
+                        .animation(
+                            store.isScanning
+                                ? .linear(duration: 1).repeatForever(autoreverses: false)
+                                : .default,
+                            value: store.isScanning
+                        )
+                }
                 .buttonStyle(.borderless)
                 .disabled(store.isScanning || store.pendingConfirmID != nil)
                 .help("Rescan")
@@ -227,7 +232,7 @@ struct CleanupPopoverView: View {
         let cleanupItems = store.results.filter { !$0.target.isPermanent }
         let trashItems = store.results.filter(\.target.isPermanent)
 
-        if store.isScanning && store.results.isEmpty && mediaStore.items.isEmpty {
+        if store.isScanning, store.results.isEmpty, mediaStore.items.isEmpty {
             VStack(spacing: 12) {
                 ProgressView()
                 Text("Scanning…")
@@ -268,7 +273,7 @@ struct CleanupPopoverView: View {
                         }
                     }
 
-                    if cleanupItems.isEmpty && trashItems.isEmpty && !store.isScanning {
+                    if cleanupItems.isEmpty, trashItems.isEmpty, !store.isScanning {
                         VStack(spacing: 6) {
                             Text("No cache cleanup targets right now")
                                 .font(.caption)

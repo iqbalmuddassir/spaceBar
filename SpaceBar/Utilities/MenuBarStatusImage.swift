@@ -3,13 +3,12 @@ import SwiftUI
 
 extension DiskSpaceMonitor {
     /// Colored capsule with free-space text drawn inside — `isTemplate = false` keeps colors in the menu bar.
-    func makeMenuBarImage(scale: CGFloat = NSScreen.main?.backingScaleFactor ?? 2) -> NSImage {
+    func makeMenuBarImage() -> NSImage {
         let label = freeSpaceLabel as NSString
         let font = NSFont.systemFont(ofSize: 11, weight: .semibold)
         let textSize = label.size(withAttributes: [.font: font])
 
         let horizontalPadding: CGFloat = 8
-        let verticalPadding: CGFloat = 2
         let minWidth: CGFloat = 64
         let height: CGFloat = 16
         let width = max(minWidth, ceil(textSize.width) + horizontalPadding * 2)
@@ -64,9 +63,9 @@ extension DiskSpaceMonitor {
 extension DiskSpaceLevel {
     var nsColor: NSColor {
         switch self {
-        case .healthy: return NSColor.systemGreen
-        case .warning: return NSColor.systemOrange
-        case .critical: return NSColor.systemRed
+        case .healthy: NSColor.systemGreen
+        case .warning: NSColor.systemOrange
+        case .critical: NSColor.systemRed
         }
     }
 }

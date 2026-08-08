@@ -42,7 +42,8 @@ enum DirectorySizer {
                 .trimmingCharacters(in: .whitespacesAndNewlines)
                 .split(whereSeparator: { $0 == "\t" || $0 == " " })
                 .first,
-                  let kb = UInt64(line) else {
+                let kb = UInt64(line)
+            else {
                 return nil
             }
             return kb * 1024
@@ -61,8 +62,12 @@ enum DirectorySizer {
 
         var total: UInt64 = 0
         for case let fileURL as URL in enumerator {
-            guard let values = try? fileURL.resourceValues(forKeys: [.isRegularFileKey, .totalFileAllocatedSizeKey, .fileAllocatedSizeKey]),
-                  values.isRegularFile == true else { continue }
+            guard let values = try? fileURL.resourceValues(forKeys: [
+                .isRegularFileKey,
+                .totalFileAllocatedSizeKey,
+                .fileAllocatedSizeKey
+            ]),
+                values.isRegularFile == true else { continue }
             if let allocated = values.totalFileAllocatedSize {
                 total += UInt64(allocated)
             } else if let allocated = values.fileAllocatedSize {

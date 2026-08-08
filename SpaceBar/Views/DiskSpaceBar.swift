@@ -4,17 +4,17 @@ struct DiskSpaceBar: View {
     let fraction: Double
     let color: Color
     var height: CGFloat = 6
-    var width: CGFloat? = nil
+    var width: CGFloat?
 
     var body: some View {
         GeometryReader { geo in
-            let w = geo.size.width
+            let barWidth = geo.size.width
             ZStack(alignment: .leading) {
                 Capsule()
                     .fill(Color.primary.opacity(0.12))
                 Capsule()
                     .fill(color)
-                    .frame(width: max(height, w * fraction))
+                    .frame(width: max(height, barWidth * fraction))
                     .animation(.snappy(duration: 0.35), value: fraction)
                     .animation(.easeInOut(duration: 0.25), value: color)
             }

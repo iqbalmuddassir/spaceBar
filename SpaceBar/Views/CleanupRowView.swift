@@ -27,7 +27,7 @@ struct CleanupRowView: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
-                if case .error(let message) = result.phase {
+                if case let .error(message) = result.phase {
                     Text(message)
                         .font(.caption2)
                         .foregroundStyle(.red)
@@ -57,9 +57,9 @@ struct CleanupRowView: View {
     private var isCommandBased: Bool {
         switch result.target.strategy {
         case .simctlDeleteUnavailable, .dockerBuilderPrune:
-            return true
+            true
         default:
-            return false
+            false
         }
     }
 

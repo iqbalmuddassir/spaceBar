@@ -1,0 +1,17 @@
+# SwiftFormat — https://github.com/nicklockwood/SwiftFormat
+--swiftversion 5.9
+--indent 4
+--indentcase false
+--trimwhitespace always
+--emptybraces spaced
+--commas inline
+--semicolons never
+--stripunusedargs closure-only
+--maxwidth 120
+--wraparguments before-first
+--wrapparameters before-first
+--wrapcollections before-first
+--closingparen balanced
+--self remove
+--importgrouping testable-bottom
+--exclude build,DerivedData

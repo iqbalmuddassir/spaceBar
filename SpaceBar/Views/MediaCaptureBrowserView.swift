@@ -93,7 +93,7 @@ struct MediaCaptureBrowserView: View {
 
     @ViewBuilder
     private var content: some View {
-        if mediaStore.isScanning && mediaStore.items.isEmpty {
+        if mediaStore.isScanning, mediaStore.items.isEmpty {
             VStack(spacing: 10) {
                 ProgressView()
                 Text("Scanning Desktop, Pictures, Movies…")

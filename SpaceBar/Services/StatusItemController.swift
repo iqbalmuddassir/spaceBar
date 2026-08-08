@@ -108,10 +108,14 @@ final class StatusItemController: NSObject, ObservableObject {
     private func handleOutsideClick() {
         guard let panel, panel.isVisible else { return }
         let click = NSEvent.mouseLocation
-        if panel.frame.contains(click) { return }
+        if panel.frame.contains(click) {
+            return
+        }
         if let button = statusItem?.button, let window = button.window {
             let buttonScreen = window.convertToScreen(button.convert(button.bounds, to: nil))
-            if buttonScreen.contains(click) { return }
+            if buttonScreen.contains(click) {
+                return
+            }
         }
         closePanel()
     }

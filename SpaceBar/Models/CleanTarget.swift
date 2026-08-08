@@ -46,11 +46,14 @@ enum RowPhase: Equatable {
 }
 
 struct TargetScanResult: Identifiable, Equatable {
-    var id: String { target.id }
+    var id: String {
+        target.id
+    }
+
     let target: CleanTarget
     var byteSize: UInt64
     var staleDescription: String?
-    var itemCount: Int? = nil
+    var itemCount: Int?
     var phase: RowPhase
     var errorMessage: String?
 
