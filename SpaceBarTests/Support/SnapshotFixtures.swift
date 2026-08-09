@@ -13,7 +13,7 @@ enum SnapshotFixtures {
         var freeBytes: UInt64 {
             switch self {
             case .good: 320_000_000_000 // ~62.5% free → healthy
-            case .low: 128_000_000_000 // 25% free → warning
+            case .low: 76_800_000_000 // 15% free → warning (defaults: warn 20%, critical 10%)
             case .critical: 25_600_000_000 // 5% free → critical
             }
         }
@@ -24,18 +24,28 @@ enum SnapshotFixtures {
     }
 
     @MainActor
-    static func diskMonitor(for freeSpaceCase: FreeSpaceCase) -> DiskSpaceMonitor {
-        diskMonitor(freeBytes: freeSpaceCase.freeBytes, totalBytes: totalBytes)
+    static func diskMonitor(
+        for freeSpaceCase: FreeSpaceCase,
+        settings: AppSettings? = nil
+    ) -> DiskSpaceMonitor {
+        diskMonitor(freeBytes: freeSpaceCase.freeBytes, totalBytes: totalBytes, settings: settings)
     }
 
     @MainActor
     static func diskMonitor(
         freeBytes: UInt64,
-        totalBytes: UInt64 = totalBytes
+        totalBytes: UInt64 = totalBytes,
+        settings: AppSettings? = nil
     ) -> DiskSpaceMonitor {
-        let monitor = DiskSpaceMonitor()
+        let monitor = DiskSpaceMonitor(settings: settings ?? .ephemeral())
         monitor.applyFixture(freeBytes: freeBytes, totalBytes: totalBytes)
         return monitor
+    }
+
+    /// Snapshots pin to shipping defaults so a stored preference can never change a reference image.
+    @MainActor
+    static func settings() -> AppSettings {
+        .ephemeral()
     }
 
     @MainActor
@@ -74,39 +84,43 @@ enum SnapshotFixtures {
     private static func sampleCleanupResults() -> [TargetScanResult] {
         [
             readyResult(
-                id: "xcode-derived",
-                name: "Xcode DerivedData",
-                subtitle: "~/Library/Developer/Xcode/DerivedData",
-                note: "Xcode will rebuild DerivedData on the next build.",
+                target: cacheTarget(
+                    id: "xcode-derived",
+                    name: "Xcode DerivedData",
+                    subtitle: "~/Library/Developer/Xcode/DerivedData",
+                    note: "Xcode will rebuild DerivedData on the next build.",
+                    activity: .built
+                ),
                 bytes: 14_200_000_000,
-                stale: "last modified 12 days ago"
+                daysAgo: 45
             ),
             readyResult(
-                id: "gradle-caches",
-                name: "Gradle Caches",
-                subtitle: "~/.gradle/caches",
-                note: "Next Gradle build will re-download dependencies.",
+                target: cacheTarget(
+                    id: "gradle-caches",
+                    name: "Gradle Caches",
+                    subtitle: "~/.gradle/caches",
+                    note: "Next Gradle build will re-download dependencies.",
+                    activity: .built
+                ),
                 bytes: 3_400_000_000,
-                stale: "last modified 3 days ago"
+                daysAgo: 40
             ),
             readyResult(
-                id: "npm",
-                name: "npm Cache",
-                subtitle: "~/.npm/_cacache",
-                note: "npm will rebuild its package cache on demand.",
+                target: cacheTarget(
+                    id: "npm",
+                    name: "npm Cache",
+                    subtitle: "~/.npm/_cacache",
+                    note: "npm will rebuild its package cache on demand.",
+                    activity: .downloaded
+                ),
                 bytes: 890_000_000,
-                stale: "last modified 5 hours ago"
+                daysAgo: 5.0 / 24.0
             ),
             readyResult(
-                id: "empty-trash",
-                name: "Empty Trash",
-                subtitle: "Finder Trash",
-                note: "Permanently deletes all items currently in Trash.",
+                target: trashTarget(),
                 bytes: 420_000_000,
+                daysAgo: 20,
                 stale: "12 items",
-                strategy: .emptyTrash,
-                strongConfirm: true,
-                permanent: true,
                 itemCount: 12
             )
         ]
@@ -163,33 +177,58 @@ enum SnapshotFixtures {
         ]
     }
 
+    /// Ages are offsets from "now" rather than absolute dates, so the rendered phrase
+    /// ("45 days ago") stays identical however long after recording the suite runs.
     private static func readyResult(
-        id: String,
-        name: String,
-        subtitle: String,
-        note: String,
+        target: CleanTarget,
         bytes: UInt64,
-        stale: String,
-        strategy: CleanStrategy = .deletePaths([]),
-        strongConfirm: Bool = false,
-        permanent: Bool = false,
+        daysAgo: Double,
+        stale: String? = nil,
         itemCount: Int? = nil
     ) -> TargetScanResult {
         TargetScanResult(
-            target: CleanTarget(
-                id: id,
-                name: name,
-                subtitle: subtitle,
-                safetyNote: note,
-                strategy: strategy,
-                requiresStrongConfirm: strongConfirm,
-                isPermanent: permanent
-            ),
+            target: target,
             byteSize: bytes,
             staleDescription: stale,
             itemCount: itemCount,
             phase: .ready,
-            errorMessage: nil
+            errorMessage: nil,
+            recency: Recency(
+                activity: target.activity,
+                lastTouched: Date().addingTimeInterval(-daysAgo * RelativeAge.day)
+            )
+        )
+    }
+
+    private static func cacheTarget(
+        id: String,
+        name: String,
+        subtitle: String,
+        note: String,
+        activity: CleanupActivity
+    ) -> CleanTarget {
+        CleanTarget(
+            id: id,
+            name: name,
+            subtitle: subtitle,
+            safetyNote: note,
+            strategy: .deletePaths([]),
+            requiresStrongConfirm: false,
+            isPermanent: false,
+            activity: activity
+        )
+    }
+
+    private static func trashTarget() -> CleanTarget {
+        CleanTarget(
+            id: "empty-trash",
+            name: "Empty Trash",
+            subtitle: "Finder Trash",
+            safetyNote: "Permanently deletes all items currently in Trash.",
+            strategy: .emptyTrash,
+            requiresStrongConfirm: true,
+            isPermanent: true,
+            activity: .trashed
         )
     }
 }

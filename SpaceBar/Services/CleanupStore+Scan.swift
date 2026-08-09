@@ -16,13 +16,14 @@ extension CleanupStore {
                     )
                 }
                 let size = DirectorySizer.size(of: existing)
-                let stale = StaleAgeCalculator.staleDescription(for: existing)
+                let touched = StaleAgeCalculator.newestModificationDate(for: existing)
                 return TargetScanResult(
                     target: target,
                     byteSize: size,
-                    staleDescription: stale,
+                    staleDescription: nil,
                     phase: .ready,
-                    errorMessage: nil
+                    errorMessage: nil,
+                    recency: touched.map { Recency(activity: target.activity, lastTouched: $0) }
                 )
 
             case .emptyTrash:
@@ -38,7 +39,8 @@ extension CleanupStore {
                     staleDescription: stale,
                     itemCount: info.itemCount,
                     phase: .ready,
-                    errorMessage: nil
+                    errorMessage: nil,
+                    recency: info.newestDate.map { Recency(activity: target.activity, lastTouched: $0) }
                 )
 
             case .simctlDeleteUnavailable:

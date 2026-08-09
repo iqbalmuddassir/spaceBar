@@ -1,4 +1,5 @@
 import AppKit
+import Combine
 import SwiftUI
 
 @main
@@ -14,18 +15,25 @@ struct SpaceBarApp: App {
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
-    private let diskMonitor = DiskSpaceMonitor()
+    private let settings = AppSettings()
+    private lazy var diskMonitor = DiskSpaceMonitor(settings: settings)
     private let cleanupStore = CleanupStore()
     private let reviewCoordinator = ReviewableFilesCoordinator()
     private var statusItemController: StatusItemController?
+    private var settingsObserver: AnyCancellable?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
         statusItemController = StatusItemController(
             monitor: diskMonitor,
             store: cleanupStore,
-            reviewCoordinator: reviewCoordinator
+            reviewCoordinator: reviewCoordinator,
+            settings: settings
         )
+        cleanupStore.excludedTargetIDs = settings.excludedTargetIDs
+        settingsObserver = settings.$excludedTargetIDs.sink { [weak self] excluded in
+            self?.cleanupStore.excludedTargetIDs = excluded
+        }
         cleanupStore.startInitialScan()
         reviewCoordinator.scanAll()
     }

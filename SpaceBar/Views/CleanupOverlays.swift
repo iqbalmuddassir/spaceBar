@@ -52,6 +52,66 @@ struct FullDiskAccessOverlay: View {
     }
 }
 
+/// One button deleting several things has to show the whole list, or it is not a real confirmation.
+struct BatchCleanConfirmOverlay: View {
+    let targets: [TargetScanResult]
+    let totalBytes: UInt64
+    let onCancel: () -> Void
+    let onConfirm: () -> Void
+
+    private var hasStrongConfirm: Bool {
+        targets.contains { $0.target.requiresStrongConfirm || $0.target.isPermanent }
+    }
+
+    var body: some View {
+        ZStack {
+            DialogBackdrop(onTap: onCancel)
+
+            PanelDialog(
+                symbol: "arrow.down.circle",
+                tint: hasStrongConfirm ? .red : .accentColor,
+                title: "Delete \(targets.count) item\(targets.count == 1 ? "" : "s") permanently?",
+                message: "Frees \(ByteFormatting.string(from: totalBytes))"
+            ) {
+                VStack(alignment: .leading, spacing: 5) {
+                    ForEach(targets) { result in
+                        HStack(spacing: 8) {
+                            Text(result.target.name)
+                                .font(.caption)
+                                .lineLimit(1)
+                            Spacer(minLength: 8)
+                            Text(result.sizeLabel)
+                                .font(.caption.weight(.semibold))
+                                .monospacedDigit()
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
+                .padding(.top, 2)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+                if hasStrongConfirm {
+                    Text("Includes items that cannot be regenerated. This cannot be undone.")
+                        .font(.caption)
+                        .foregroundStyle(.red)
+                        .multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            } actions: {
+                DialogButton(title: "Cancel", action: onCancel)
+                    .keyboardShortcut(.cancelAction)
+                DialogButton(
+                    title: "Delete",
+                    isDefault: true,
+                    tint: hasStrongConfirm ? .red : .accentColor,
+                    action: onConfirm
+                )
+                .keyboardShortcut(.defaultAction)
+            }
+        }
+    }
+}
+
 struct CleanupConfirmOverlay: View {
     let target: CleanTarget
     let onCancel: () -> Void

@@ -193,6 +193,32 @@ final class PanelSnapshotTests: XCTestCase {
         SnapshotExport.exportHiResSnapshot(image: image, named: "spacebar-pill-critical")
     }
 
+    func testCleanupPanelMapLayout() {
+        LiquidGlassRuntime.withChrome(false) {
+            let settings = SnapshotFixtures.settings()
+            settings.layout = .map
+            let hosting = makeCleanupPanel(for: .good, settings: settings)
+            assertSnapshot(
+                of: hosting,
+                as: .image(precision: 0.98, perceptualPrecision: 0.98),
+                named: "cleanup-panel-map"
+            )
+            SnapshotExport.exportHiResSnapshot(from: hosting, named: "spacebar-panel-map")
+        }
+    }
+
+    func testCleanupPanelLedgerLayout() {
+        LiquidGlassRuntime.withChrome(false) {
+            let settings = SnapshotFixtures.settings()
+            settings.layout = .ledger
+            assertSnapshot(
+                of: makeCleanupPanel(for: .good, settings: settings),
+                as: .image(precision: 0.98, perceptualPrecision: 0.98),
+                named: "cleanup-panel-ledger"
+            )
+        }
+    }
+
     private func requireLiquidGlassHost() throws {
         guard #available(macOS 26, *) else {
             throw XCTSkip("Liquid Glass snapshots require macOS 26+")
@@ -247,8 +273,12 @@ final class PanelSnapshotTests: XCTestCase {
         }
     }
 
-    private func makeCleanupPanel(for freeSpaceCase: SnapshotFixtures.FreeSpaceCase) -> NSView {
-        let monitor = SnapshotFixtures.diskMonitor(for: freeSpaceCase)
+    private func makeCleanupPanel(
+        for freeSpaceCase: SnapshotFixtures.FreeSpaceCase,
+        settings: AppSettings? = nil
+    ) -> NSView {
+        let settings = settings ?? SnapshotFixtures.settings()
+        let monitor = SnapshotFixtures.diskMonitor(for: freeSpaceCase, settings: settings)
         let store = SnapshotFixtures.cleanupStore()
         let reviewCoordinator = SnapshotFixtures.reviewCoordinator()
 
@@ -256,6 +286,7 @@ final class PanelSnapshotTests: XCTestCase {
             .environmentObject(monitor)
             .environmentObject(store)
             .environmentObject(reviewCoordinator)
+            .environmentObject(settings)
             .frame(width: SnapshotFixtures.panelSize.width, height: SnapshotFixtures.panelSize.height)
 
         return SnapshotExport.makeHostedPanel(rootView: root)

@@ -36,9 +36,20 @@ final class DiskSpaceMonitor: ObservableObject {
     @Published private(set) var menuBarImage: NSImage = .init(size: NSSize(width: 1, height: 1))
 
     private var timer: Timer?
+    let settings: AppSettings
+    private var settingsObserver: AnyCancellable?
+    private var isPinnedToFixture = false
 
-    init() {
+    init(settings: AppSettings) {
+        self.settings = settings
         refresh()
+        // A threshold change only re-grades the numbers already held; re-reading the volume
+        // would also let a real disk overwrite a fixture mid-test.
+        settingsObserver = settings.objectWillChange.sink { [weak self] _ in
+            Task { @MainActor in
+                self?.regradeLevel()
+            }
+        }
         timer = Timer.scheduledTimer(withTimeInterval: 15, repeats: true) { [weak self] _ in
             Task { @MainActor in
                 self?.refresh()
@@ -64,8 +75,15 @@ final class DiskSpaceMonitor: ObservableObject {
     }
 
     func refresh() {
+        guard !isPinnedToFixture else { return }
         let stats = Self.volumeStats(at: "/")
         apply(stats: stats)
+    }
+
+    /// Re-grades the held figures against the current thresholds without touching the volume.
+    func regradeLevel() {
+        level = settings.level(forFreeFraction: freeFraction)
+        refreshMenuBarImage()
     }
 
     func refreshAfterCleaning() async {
@@ -76,7 +94,10 @@ final class DiskSpaceMonitor: ObservableObject {
         refresh()
     }
 
+    /// Pins the monitor to the supplied figures so no timer, observer, or real volume read
+    /// can replace them — snapshots must render the same bytes every run.
     func applyFixture(freeBytes: UInt64, totalBytes: UInt64) {
+        isPinnedToFixture = true
         apply(stats: (freeBytes, totalBytes))
     }
 
@@ -89,13 +110,7 @@ final class DiskSpaceMonitor: ObservableObject {
         freeFraction = min(max(fraction, 0), 1)
         freePercentLabel = String(format: "%.0f%%", freeFraction * 100)
 
-        if freeFraction < 0.10 {
-            level = .critical
-        } else if freeFraction < 0.50 {
-            level = .warning
-        } else {
-            level = .healthy
-        }
+        level = settings.level(forFreeFraction: freeFraction)
 
         refreshMenuBarImage()
         objectWillChange.send()

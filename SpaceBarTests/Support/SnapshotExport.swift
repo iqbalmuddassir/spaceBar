@@ -5,8 +5,8 @@ import SwiftUI
 enum SnapshotExport {
     static let marketingScale: CGFloat = 3
 
-    static func makeHostedPanel(rootView: some View) -> NSView {
-        let panelSize = SnapshotFixtures.panelSize
+    static func makeHostedPanel(rootView: some View, size: CGSize? = nil) -> NSView {
+        let panelSize = size ?? SnapshotFixtures.panelSize
         let backdrop = NSView(frame: NSRect(origin: .zero, size: panelSize))
         backdrop.wantsLayer = true
         backdrop.layer?.backgroundColor = NSColor(calibratedRed: 0.18, green: 0.22, blue: 0.30, alpha: 1).cgColor

@@ -9,13 +9,20 @@ final class StatusItemController: NSObject, ObservableObject {
     private let monitor: DiskSpaceMonitor
     private let store: CleanupStore
     private let reviewCoordinator: ReviewableFilesCoordinator
+    private let settings: AppSettings
     private var cancellables = Set<AnyCancellable>()
     private var eventMonitor: Any?
 
-    init(monitor: DiskSpaceMonitor, store: CleanupStore, reviewCoordinator: ReviewableFilesCoordinator) {
+    init(
+        monitor: DiskSpaceMonitor,
+        store: CleanupStore,
+        reviewCoordinator: ReviewableFilesCoordinator,
+        settings: AppSettings
+    ) {
         self.monitor = monitor
         self.store = store
         self.reviewCoordinator = reviewCoordinator
+        self.settings = settings
         super.init()
         setup()
     }
@@ -68,6 +75,7 @@ final class StatusItemController: NSObject, ObservableObject {
             .environmentObject(monitor)
             .environmentObject(store)
             .environmentObject(reviewCoordinator)
+            .environmentObject(settings)
             .frame(width: 420, height: 560)
 
         let hosting = NSHostingController(rootView: root)

@@ -326,47 +326,51 @@ struct ReviewableFilesSummaryRow: View {
         Button {
             store.openBrowser()
         } label: {
-            HStack(spacing: 12) {
+            HStack(spacing: 10) {
+                Image(systemName: "chevron.right.circle")
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundStyle(Color.accentColor)
+                    .frame(width: 16)
+                    .liquidGlassEffectID(navigationGlassID, in: glassNamespace)
+
                 VStack(alignment: .leading, spacing: 3) {
                     Text(store.title)
                         .font(.system(.body, weight: .medium))
                         .lineLimit(1)
                         .minimumScaleFactor(0.8)
-                    if store.isScanning {
-                        Text("Scanning…")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    } else if store.totalBytes > 0 {
-                        Text(store.reclaimHint)
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(Color.accentColor)
-                        Text(store.summaryLabel)
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                            .lineLimit(2)
-                    } else {
-                        Text("None found")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                    Group {
+                        if store.isScanning {
+                            Text("Scanning…")
+                        } else if store.totalBytes > 0 {
+                            Text(store.summaryLabel)
+                        } else {
+                            Text("None found")
+                        }
                     }
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
                 }
 
                 Spacer(minLength: 8)
 
-                if store.totalBytes > 0 {
-                    VStack(alignment: .trailing, spacing: 2) {
-                        Text(store.totalBytesLabel)
-                            .font(.system(.body, design: .rounded).weight(.semibold))
-                            .monospacedDigit()
-                        Text("reclaimable")
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
+                Text("REVIEW")
+                    .font(.system(size: 9, weight: .semibold))
+                    .tracking(0.5)
+                    .foregroundStyle(Color.accentColor)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .overlay {
+                        Capsule().strokeBorder(Color.accentColor.opacity(0.45), lineWidth: 0.8)
                     }
-                }
 
-                Text("Review")
-                    .liquidPillLabel()
-                    .liquidGlassEffectID(navigationGlassID, in: glassNamespace)
+                if store.totalBytes > 0 {
+                    Text(store.totalBytesLabel)
+                        .font(.system(.body, design: .rounded).weight(.semibold))
+                        .monospacedDigit()
+                        .frame(minWidth: 64, alignment: .trailing)
+                }
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 11)

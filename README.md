@@ -26,12 +26,43 @@ Developer machines fill up with regenerable junk: Xcode DerivedData, package cac
 
 ## What it does
 
-- Shows free disk space in the menu bar as a colored pill (green when plenty is free, orange under 50%, red under 10%)
-- Scans known cache and cleanup locations and lists how much each can free
-- Deletes regenerable caches permanently after you confirm (so space frees immediately)
-- Empties Trash via Finder when you choose Empty Trash
+- Shows free disk space in the menu bar as a colored pill (green when plenty is free, orange under 20%, red under 10% — both thresholds configurable)
+- Scans known cache and cleanup locations and lists how much each can free, sorted by payoff
+- Tells you how long ago each target was actually touched, in its own words — "Built 20 minutes ago", "Downloaded 40 days ago", "Newest item trashed 2 weeks ago"
+- Pre-selects only what is old enough to be safe, and says why anything was held back
+- Reclaims everything you ticked in one press, after a confirmation that lists exactly what goes
+- Empties Trash via Finder when you choose Empty Trash (never pre-selected — it is the one irreversible target)
 - Lets you review screenshots and screen recordings as one item, select what to delete, and keep the rest
 - Lets you review downloaded installer packages (`.dmg`, `.pkg`, `.iso`) as a separate item, select what to delete, and keep the rest
+
+### Choosing a layout
+
+The panel's list, selection and cleanup button are the same whichever layout you pick — only the
+header above them changes, so the choice is about how much room the overview gets:
+
+| Layout | Header | Best when |
+| --- | --- | --- |
+| **Gauge** (default) | Capacity meter with recoverable space as the headline | You want the summary and the rows both visible |
+| **Ledger** | A single thin bar | You want as many rows on screen as possible |
+| **Map** | Treemap where area is bytes and color is recency | You want to see at a glance what is eating the disk |
+
+Map needs at least 3 items to draw — one or two tiles say less than a bar does. Below that it
+shows Gauge and says why, rather than silently ignoring your choice. There is no minimum size:
+proportion reads the same whether the total is 40 MB or 40 GB. Small targets fold into one
+"Everything else" tile rather than becoming unreadable slivers.
+
+### Settings
+
+Open Settings from the gear in the panel footer; it slides in over the panel.
+
+| Section | Controls |
+| --- | --- |
+| Look | Layout, menu bar pill style, percentage vs size, row density |
+| Limits | Warning and critical thresholds, each restated in GB against your actual disk |
+| Scanning | How old counts as stale, which targets to scan at all, rescan on open |
+
+"Stale" is one number driving three things: when an age turns amber, what the review filter chip
+says, and what arrives pre-selected.
 
 Sizes use decimal GB (1 GB = 1,000³ bytes), same style as System Settings → Storage.
 
@@ -81,10 +112,14 @@ Some folders need Full Disk Access. Emptying Trash may need Automation access to
 
 1. Launch SpaceBar. The free-space pill appears in the menu bar.
 2. Click the pill to open the panel. Wait for the first scan to finish.
-3. Check the reclaimable total and the per-target list.
-4. Click Clean on a target, read the confirmation, then confirm to delete permanently.
-5. For screenshots and recordings, open Review, select items (or use age filters), then delete the selection.
-6. Use the refresh control to rescan sizes and free space after cleaning.
+3. Read the headline: how much you can recover, and what it costs. Anything untouched for longer
+   than your stale setting arrives already ticked.
+4. Adjust the ticks. Rows touched recently are left off deliberately — the age line tells you what
+   cleaning one would cost ("forces a full rebuild", "will re-download").
+5. Press **Clean selected**, read the list in the confirmation, then confirm to delete permanently.
+6. For screenshots, recordings and installers, open the row to review individual files before
+   deleting.
+7. Use the refresh control to rescan sizes and free space after cleaning.
 
 Quit from the panel footer when you are done, or leave it running for a live free-space meter.
 
@@ -138,7 +173,7 @@ UI snapshots cover the cleanup panel and menu bar pill for three free-space leve
 | Case | Free space | Color |
 | --- | --- | --- |
 | Good | ~62% free | Green |
-| Low | 25% free | Orange |
+| Low | 15% free | Orange |
 | Critical | 5% free | Red |
 
 Fixtures seed fixed disk/cache/media data so images stay stable.
@@ -148,13 +183,21 @@ xcodegen generate
 xcodebuild -scheme SpaceBar -destination 'platform=macOS,arch=arm64' -derivedDataPath build test
 ```
 
-Reference images live in `SpaceBarTests/__Snapshots__/`. README assets under `Docs/` are refreshed when the snapshot tests run (`spacebar-panel-*.png`, `spacebar-pill-*.png`).
+Ledger and Map layouts, the settings sections, and the treemap layout algorithm have their own
+tests. Reference images live in `SpaceBarTests/__Snapshots__/`. README assets under `Docs/` are refreshed when the snapshot tests run (`spacebar-panel-*.png`, `spacebar-pill-*.png`).
 
-To re-record after intentional UI changes:
+To re-record after intentional UI changes, delete the references and run the suite — missing
+references are always written back:
 
 ```bash
-SNAPSHOT_TESTING_RECORD=all xcodebuild -scheme SpaceBar -destination 'platform=macOS,arch=arm64' -derivedDataPath build test
+rm -f SpaceBarTests/__Snapshots__/PanelSnapshotTests/*.png
+xcodebuild -scheme SpaceBar -destination 'platform=macOS,arch=arm64' -derivedDataPath build test  # records, reports failures
+xcodebuild -scheme SpaceBar -destination 'platform=macOS,arch=arm64' -derivedDataPath build test  # verifies
 ```
+
+`SNAPSHOT_TESTING_RECORD=all` does not work here — `xcodebuild` does not forward it to the test
+process, so the run silently compares instead of recording. The giveaway is a failure saying
+"does not match reference" rather than "Automatically recorded snapshot".
 
 ## Project layout
 
