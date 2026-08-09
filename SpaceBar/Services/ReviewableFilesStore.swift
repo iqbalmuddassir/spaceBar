@@ -15,6 +15,9 @@ final class ReviewableFilesStore: ObservableObject {
     @Published var showBrowser = false
     @Published var confirmDelete = false
 
+    @Published var sortOrder: ReviewableSortOrder = .largest
+    @Published var kindFilter: ReviewableFileKind?
+
     init(category: ReviewableFileCategory) {
         self.category = category
     }
@@ -23,8 +26,26 @@ final class ReviewableFilesStore: ObservableObject {
         category.title
     }
 
+    var visibleFiles: [ReviewableFile] {
+        files
+            .filter { kindFilter == nil || $0.kind == kindFilter }
+            .sorted(by: sortOrder.areInIncreasingOrder)
+    }
+
+    var availableKindFilters: [ReviewableFileKind] {
+        category.kinds.count > 1 ? category.kinds : []
+    }
+
+    func count(of kind: ReviewableFileKind) -> Int {
+        files.filter { $0.kind == kind }.count
+    }
+
     var selectedFiles: [ReviewableFile] {
         files.filter { selectedIDs.contains($0.id) }
+    }
+
+    var hasSelectionOutsideFilter: Bool {
+        selectedIDs.count > visibleFiles.filter { selectedIDs.contains($0.id) }.count
     }
 
     var selectedBytes: UInt64 {
@@ -64,19 +85,20 @@ final class ReviewableFilesStore: ObservableObject {
     private var statusClearTask: Task<Void, Never>?
     private var scanTask: Task<Void, Never>?
 
+    private var scanGeneration = 0
+
     func scan() {
         scanTask?.cancel()
+        scanGeneration += 1
+        let generation = scanGeneration
         isScanning = true
         statusMessage = category.scanningStatus
         let category = category
-        scanTask = Task {
+        scanTask = Task { [weak self] in
             let found = await Task.detached(priority: .utility) {
                 ReviewableFileScanner.scan(category: category)
             }.value
-            guard !Task.isCancelled else {
-                isScanning = false
-                return
-            }
+            guard let self, generation == scanGeneration else { return }
             files = found
             selectedIDs = selectedIDs.intersection(Set(found.map(\.id)))
             isScanning = false
@@ -90,9 +112,8 @@ final class ReviewableFilesStore: ObservableObject {
 
     func openBrowser() {
         showBrowser = true
-        if files.isEmpty, !isScanning {
-            scan()
-        }
+        guard !isScanning else { return }
+        scan()
     }
 
     func closeBrowser() {
@@ -107,6 +128,7 @@ final class ReviewableFilesStore: ObservableObject {
 
     func loadFixture(files: [ReviewableFile], statusMessage: String? = nil) {
         scanTask?.cancel()
+        scanGeneration += 1
         isScanning = false
         isDeleting = false
         confirmDelete = false
@@ -125,16 +147,33 @@ final class ReviewableFilesStore: ObservableObject {
     }
 
     func selectAll() {
-        selectedIDs = Set(files.map(\.id))
+        selectedIDs.formUnion(visibleFiles.map(\.id))
     }
 
     func selectNone() {
         selectedIDs.removeAll()
     }
 
+    var areAllVisibleSelected: Bool {
+        let visible = visibleFiles
+        return !visible.isEmpty && visible.allSatisfy { selectedIDs.contains($0.id) }
+    }
+
+    func toggleSelectAll() {
+        if areAllVisibleSelected {
+            selectedIDs.subtract(visibleFiles.map(\.id))
+        } else {
+            selectAll()
+        }
+    }
+
     func selectOlderThan(days: Int) {
         let cutoff = Calendar.current.date(byAdding: .day, value: -days, to: Date()) ?? Date()
-        selectedIDs = Set(files.filter { $0.modified < cutoff }.map(\.id))
+        selectedIDs = Set(visibleFiles.filter { $0.modified < cutoff }.map(\.id))
+    }
+
+    func revealInFinder(_ file: ReviewableFile) {
+        NSWorkspace.shared.activateFileViewerSelecting([file.url])
     }
 
     func requestDeleteSelected() {

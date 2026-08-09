@@ -1,9 +1,39 @@
 import Foundation
 
-enum ReviewableFileKind: String, Equatable {
+enum ReviewableSortOrder: String, CaseIterable, Identifiable {
+    case largest
+    case newest
+    case name
+
+    var id: String {
+        rawValue
+    }
+
+    var label: String {
+        switch self {
+        case .largest: "Largest"
+        case .newest: "Newest"
+        case .name: "Name"
+        }
+    }
+
+    func areInIncreasingOrder(_ lhs: ReviewableFile, _ rhs: ReviewableFile) -> Bool {
+        switch self {
+        case .largest: lhs.byteSize > rhs.byteSize
+        case .newest: lhs.modified > rhs.modified
+        case .name: lhs.name.localizedStandardCompare(rhs.name) == .orderedAscending
+        }
+    }
+}
+
+enum ReviewableFileKind: String, Equatable, Identifiable {
     case screenshot
     case recording
     case installer
+
+    var id: String {
+        rawValue
+    }
 
     var label: String {
         switch self {
