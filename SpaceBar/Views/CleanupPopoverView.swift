@@ -5,6 +5,7 @@ struct CleanupPopoverView: View {
     @EnvironmentObject private var diskMonitor: DiskSpaceMonitor
     @EnvironmentObject private var store: CleanupStore
     @EnvironmentObject private var reviewCoordinator: ReviewableFilesCoordinator
+    @EnvironmentObject private var settings: AppSettings
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @Namespace private var glassNamespace
@@ -13,6 +14,12 @@ struct CleanupPopoverView: View {
         ZStack {
             if let activeStore = reviewCoordinator.activeBrowserStore {
                 ReviewableFilesBrowserView(store: activeStore)
+                    .transition(.asymmetric(
+                        insertion: .move(edge: .trailing).combined(with: .opacity),
+                        removal: .move(edge: .trailing).combined(with: .opacity)
+                    ))
+            } else if store.isShowingSettings {
+                PanelSettingsView { store.isShowingSettings = false }
                     .transition(.asymmetric(
                         insertion: .move(edge: .trailing).combined(with: .opacity),
                         removal: .move(edge: .trailing).combined(with: .opacity)
@@ -31,9 +38,16 @@ struct CleanupPopoverView: View {
         .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
         .environment(\.liquidGlassNamespace, glassNamespace)
         .onAppear {
-            store.startInitialScan()
+            if settings.rescanOnOpen {
+                store.scanAll()
+                reviewCoordinator.scanAll()
+                diskMonitor.refresh()
+            } else {
+                store.startInitialScan()
+            }
         }
         .animation(LiquidGlassMotion.panel(reduceMotion), value: reviewCoordinator.activeBrowserStore != nil)
+        .animation(LiquidGlassMotion.panel(reduceMotion), value: store.isShowingSettings)
         .animation(LiquidGlassMotion.overlay(reduceMotion), value: store.pendingConfirmID)
         .animation(LiquidGlassMotion.overlay(reduceMotion), value: store.showFullDiskAccessPrompt)
         .animation(LiquidGlassMotion.panel(reduceMotion), value: store.isScanning)
@@ -64,11 +78,38 @@ struct CleanupPopoverView: View {
                 .transition(.opacity.combined(with: .scale(scale: 0.96)))
             }
 
+            if store.isBatchConfirming {
+                BatchCleanConfirmOverlay(
+                    targets: selectedResults,
+                    totalBytes: selectedBytes,
+                    onCancel: { store.isBatchConfirming = false },
+                    onConfirm: {
+                        store.performBatchClean(
+                            selectedResults.map(\.target),
+                            diskMonitor: diskMonitor
+                        )
+                    }
+                )
+                .transition(.opacity.combined(with: .scale(scale: 0.96)))
+            }
+
             if store.showFullDiskAccessPrompt {
                 FullDiskAccessOverlay(isPresented: $store.showFullDiskAccessPrompt)
                     .transition(.opacity.combined(with: .scale(scale: 0.96)))
             }
         }
+    }
+
+    private var selectedResults: [TargetScanResult] {
+        store.selectedResults(staleAfter: settings.staleInterval)
+    }
+
+    private var selectedBytes: UInt64 {
+        store.selectedBytes(staleAfter: settings.staleInterval)
+    }
+
+    private var reclaimableBytes: UInt64 {
+        store.totalReclaimable + reviewCoordinator.totalReclaimableBytes
     }
 
     private var header: some View {
@@ -109,44 +150,15 @@ struct CleanupPopoverView: View {
                 .help("Rescan")
             }
 
-            DiskSpaceStatusCard(monitor: diskMonitor)
-
-            reclaimChip
+            layoutHeader
         }
         .padding(.horizontal, 16)
         .padding(.top, 14)
-        .padding(.bottom, 12)
+        .padding(.bottom, settings.layout == .ledger ? 6 : 12)
     }
 
-    @ViewBuilder
-    private var reclaimChip: some View {
-        let cacheReclaim = store.totalReclaimable
-        let filesReclaim = reviewCoordinator.totalReclaimableBytes
-        let combined = cacheReclaim + filesReclaim
-        if combined > 0 {
-            HStack(spacing: 6) {
-                Image(systemName: "arrow.down.circle.fill")
-                    .foregroundStyle(.secondary)
-                Text("Can reclaim \(ByteFormatting.string(from: combined))")
-                    .font(.caption.weight(.semibold))
-                    .contentTransition(.numericText())
-                Spacer(minLength: 8)
-                HStack(spacing: 8) {
-                    if cacheReclaim > 0 {
-                        Text("Caches \(store.totalReclaimableLabel)")
-                    }
-                    if filesReclaim > 0 {
-                        Text("Files \(reviewCoordinator.totalReclaimableLabel)")
-                    }
-                }
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-            }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-            .liquidGlass(in: Capsule())
-            .liquidGlassTransitionMaterialize()
-        }
+    private var layoutHeader: some View {
+        PanelLayoutHeader()
     }
 
     @ViewBuilder
@@ -166,53 +178,65 @@ struct CleanupPopoverView: View {
         } else {
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 0) {
-                    sectionLabel("Files")
+                    listHeader
+
                     ForEach(Array(reviewStores.enumerated()), id: \.element.category) { index, reviewStore in
                         ReviewableFilesSummaryRow(store: reviewStore)
-                        if index < reviewStores.count - 1 {
+                        if index < reviewStores.count - 1 || !cleanupItems.isEmpty || !trashItems.isEmpty {
                             Divider().padding(.leading, 16)
                         }
                     }
 
-                    if !cleanupItems.isEmpty {
-                        sectionLabel("Cleanup")
-                        ForEach(Array(cleanupItems.enumerated()), id: \.element.id) { index, result in
-                            CleanupRowView(
-                                result: result,
-                                isConfirming: store.pendingConfirmID == result.id
-                            ) {
-                                store.requestDelete(result.target)
-                            }
-                            if index < cleanupItems.count - 1 {
-                                Divider().padding(.leading, 16)
-                            }
+                    ForEach(Array(cleanupItems.enumerated()), id: \.element.id) { index, result in
+                        reclaimRow(for: result)
+                        if index < cleanupItems.count - 1 || !trashItems.isEmpty {
+                            Divider().padding(.leading, 16)
                         }
                     }
 
-                    if !trashItems.isEmpty {
-                        sectionLabel("Trash")
-                        ForEach(trashItems) { result in
-                            CleanupRowView(
-                                result: result,
-                                isConfirming: store.pendingConfirmID == result.id
-                            ) {
-                                store.requestDelete(result.target)
-                            }
-                        }
+                    ForEach(trashItems) { result in
+                        reclaimRow(for: result)
                     }
 
                     if cleanupItems.isEmpty, trashItems.isEmpty, !store.isScanning {
-                        VStack(spacing: 6) {
-                            Text("No cache cleanup targets right now")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 16)
+                        Text("No cache cleanup targets right now")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 16)
                     }
                 }
                 .padding(.vertical, 4)
             }
+        }
+    }
+
+    private var listHeader: some View {
+        ReclaimListHeader(allSelected: allSelected) {
+            store.setAllSelected(!allSelected)
+        }
+    }
+
+    private var allSelected: Bool {
+        let selectable = store.results.filter { !$0.target.isPermanent }
+        guard !selectable.isEmpty else { return false }
+        return selectable.allSatisfy { store.isSelected($0, staleAfter: settings.staleInterval) }
+    }
+
+    private func reclaimRow(for result: TargetScanResult) -> some View {
+        ReclaimRowView(
+            title: result.target.name,
+            sizeLabel: result.sizeLabel,
+            recency: result.recency,
+            fallbackCaption: result.staleDescription ?? result.target.subtitle,
+            kindBadge: result.target.isPermanent ? "trash" : "cache",
+            isSelected: store.isSelected(result, staleAfter: settings.staleInterval),
+            phase: result.phase,
+            errorMessage: result.errorMessage,
+            staleAfter: settings.staleInterval,
+            density: settings.density
+        ) {
+            store.toggleSelection(result, staleAfter: settings.staleInterval)
         }
     }
 
@@ -227,30 +251,15 @@ struct CleanupPopoverView: View {
     }
 
     private var footer: some View {
-        HStack {
-            Group {
-                if let status = store.statusMessage {
-                    Text(status)
-                        .lineLimit(2)
-                } else if store.isScanning {
-                    Text("Updating sizes…")
-                } else {
-                    Text("\(store.results.count) targets")
-                }
-            }
-            .font(.caption)
-            .foregroundStyle(.secondary)
-            Spacer()
-            Button("Quit") {
-                NSApplication.shared.terminate(nil)
-            }
-            .liquidChipButtonStyle()
-        }
-        .padding(.horizontal, 16)
-        .padding(.top, 10)
-        .padding(.bottom, 14)
-        .overlay(alignment: .top) {
-            Divider().opacity(0.55)
-        }
+        PanelFooter(
+            selectedBytes: selectedBytes,
+            selectionSummary: store.selectionSummary(staleAfter: settings.staleInterval),
+            statusMessage: store.statusMessage,
+            isScanning: store.isScanning,
+            isBusy: store.isDeletingAny || store.isScanning,
+            targetCount: store.results.count,
+            onClean: { store.isBatchConfirming = true },
+            onOpenSettings: { store.isShowingSettings = true }
+        )
     }
 }

@@ -10,6 +10,14 @@ final class CleanupStore: ObservableObject {
     @Published private(set) var statusMessage: String?
     @Published var showFullDiskAccessPrompt = false
     @Published var pendingConfirmID: String?
+    /// Only rows the user has actually touched. Everything else defers to the recency default,
+    /// so a rescan that changes an age also changes what arrives ticked.
+    @Published var explicitSelection: [String: Bool] = [:]
+    @Published var isBatchConfirming = false
+    @Published var isShowingSettings = false
+    /// Targets the user switched off in Settings. Skipped before the scan, not after, so
+    /// unticking one actually makes opening the panel faster.
+    var excludedTargetIDs: Set<String> = []
 
     var pendingConfirm: CleanTarget? {
         guard let pendingConfirmID else { return nil }
@@ -36,6 +44,7 @@ final class CleanupStore: ObservableObject {
 
     private var scanTask: Task<Void, Never>?
     private var hasCompletedInitialScan = false
+    private var isPinnedToFixture = false
     private var statusClearTask: Task<Void, Never>?
 
     func startInitialScan() {
@@ -44,6 +53,7 @@ final class CleanupStore: ObservableObject {
     }
 
     func scanAll(clearExisting: Bool = false) {
+        guard !isPinnedToFixture else { return }
         guard !isDeletingAny else {
             setStatus("Wait for the current delete to finish")
             return
@@ -54,7 +64,7 @@ final class CleanupStore: ObservableObject {
         statusMessage = "Scanning…"
         prepareResultsForScan(clearExisting: clearExisting)
 
-        let targets = CleanTargetRegistry.allTargets()
+        let targets = CleanTargetRegistry.allTargets().filter { !excludedTargetIDs.contains($0.id) }
         let total = Double(max(targets.count, 1))
 
         scanTask = Task {
@@ -65,9 +75,26 @@ final class CleanupStore: ObservableObject {
     func resetTransientUIState() {
         pendingConfirmID = nil
         showFullDiskAccessPrompt = false
+        isBatchConfirming = false
+        isShowingSettings = false
     }
 
+    /// Deletes each selected target in turn, keeping the existing per-target guards and
+    /// error handling rather than introducing a second delete path.
+    func performBatchClean(_ targets: [CleanTarget], diskMonitor: DiskSpaceMonitor) {
+        isBatchConfirming = false
+        Task {
+            for target in targets {
+                await performDelete(target, diskMonitor: diskMonitor)
+            }
+            clearSelectionOverrides()
+        }
+    }
+
+    /// Pins the store to the supplied results so no scan — including rescan-on-open — can
+    /// replace them with whatever is really on this machine.
     func loadFixture(results: [TargetScanResult], statusMessage: String? = nil) {
+        isPinnedToFixture = true
         scanTask?.cancel()
         hasCompletedInitialScan = true
         isScanning = false
@@ -225,7 +252,7 @@ final class CleanupStore: ObservableObject {
         }
     }
 
-    private func performDelete(_ target: CleanTarget, diskMonitor: DiskSpaceMonitor) async {
+    func performDelete(_ target: CleanTarget, diskMonitor: DiskSpaceMonitor) async {
         if let index = results.firstIndex(where: { $0.id == target.id }) {
             withAnimation(.easeInOut(duration: 0.15)) {
                 results[index].phase = .deleting

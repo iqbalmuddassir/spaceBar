@@ -3,6 +3,9 @@ import Foundation
 struct TrashInfo {
     let itemCount: Int
     let byteSize: UInt64
+    /// When something was most recently moved to Trash. Only the direct read can supply this;
+    /// the Finder fallbacks leave it nil and the row falls back to its item count.
+    var newestDate: Date?
 }
 
 enum TrashService {
@@ -107,10 +110,29 @@ enum TrashService {
                 options: []
             )
             let size = DirectorySizer.size(of: trash)
-            return TrashInfo(itemCount: children.count, byteSize: size)
+            return TrashInfo(
+                itemCount: children.count,
+                byteSize: size,
+                newestDate: newestTrashedDate(among: children)
+            )
         } catch {
             return nil
         }
+    }
+
+    /// Top-level items only: a trashed item's own date is when it was trashed, and recursing
+    /// would report when its contents were last edited instead.
+    private static func newestTrashedDate(among children: [URL]) -> Date? {
+        let keys: Set<URLResourceKey> = [.addedToDirectoryDateKey, .contentModificationDateKey]
+        var newest: Date?
+        for child in children {
+            guard let values = try? child.resourceValues(forKeys: keys) else { continue }
+            guard let date = values.addedToDirectoryDate ?? values.contentModificationDate else { continue }
+            if newest == nil || date > newest! {
+                newest = date
+            }
+        }
+        return newest
     }
 
     private static func emptyDirectly() throws {

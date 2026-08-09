@@ -15,6 +15,9 @@ struct CleanTarget: Identifiable, Equatable {
     let strategy: CleanStrategy
     let requiresStrongConfirm: Bool
     let isPermanent: Bool
+    /// Names what actually happened to this target, so the row reads "Built 20 minutes ago"
+    /// rather than the filesystem's "last modified".
+    var activity: CleanupActivity = .used
 
     var confirmationTitle: String {
         isPermanent ? "Empty Trash permanently?" : "Delete permanently?"
@@ -55,9 +58,26 @@ struct TargetScanResult: Identifiable, Equatable {
     var itemCount: Int?
     var phase: RowPhase
     var errorMessage: String?
+    var recency: Recency?
 
     var sizeLabel: String {
         ByteFormatting.string(from: byteSize)
+    }
+
+    func temperature(staleAfter: TimeInterval, now: Date = Date()) -> RecencyTemperature? {
+        recency?.temperature(staleAfter: staleAfter, now: now)
+    }
+
+    /// Cold targets arrive pre-selected; anything touched more recently is left for the user
+    /// to opt into, so the one-press cleanup never removes something in active use.
+    func isSafeByDefault(staleAfter: TimeInterval, now: Date = Date()) -> Bool {
+        guard !target.isPermanent else { return false }
+        guard let temperature = temperature(staleAfter: staleAfter, now: now) else { return true }
+        return temperature.isSafeByDefault
+    }
+
+    func recencyCaption(staleAfter: TimeInterval, now: Date = Date()) -> String? {
+        recency?.caption(staleAfter: staleAfter, now: now) ?? staleDescription
     }
 
     var isVisible: Bool {

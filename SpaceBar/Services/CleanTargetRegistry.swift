@@ -14,7 +14,11 @@ enum CleanTargetRegistry {
         targets.append(contentsOf: packageManagerTargets(home: home, caches: caches))
         targets.append(contentsOf: optionalToolTargets(home: home, caches: caches))
         targets.append(emptyTrashTarget())
-        return targets
+        return targets.map { target in
+            var copy = target
+            copy.activity = activities[target.id] ?? .used
+            return copy
+        }
     }
 
     private static func generalTargets(home: URL, caches: URL) -> [CleanTarget] {
