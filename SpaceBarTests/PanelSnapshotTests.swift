@@ -117,6 +117,49 @@ final class PanelSnapshotTests: XCTestCase {
         )
     }
 
+    func testCleanupConfirmDialog() {
+        LiquidGlassRuntime.withChrome(false) {
+            let target = CleanTarget(
+                id: "xcode-derived",
+                name: "Xcode DerivedData",
+                subtitle: "~/Library/Developer/Xcode/DerivedData",
+                safetyNote: "Xcode will rebuild DerivedData on the next build.",
+                strategy: .deletePaths([]),
+                requiresStrongConfirm: false,
+                isPermanent: false
+            )
+            let root = ZStack {
+                Color(nsColor: .windowBackgroundColor)
+                CleanupConfirmOverlay(target: target, onCancel: { }, onConfirm: { })
+            }
+            .frame(width: SnapshotFixtures.panelSize.width, height: SnapshotFixtures.panelSize.height)
+
+            assertSnapshot(
+                of: SnapshotExport.makeHostedPanel(rootView: root),
+                as: .image(precision: 0.98, perceptualPrecision: 0.98),
+                named: "cleanup-confirm-dialog",
+                testName: #function
+            )
+        }
+    }
+
+    func testFullDiskAccessDialog() {
+        LiquidGlassRuntime.withChrome(false) {
+            let root = ZStack {
+                Color(nsColor: .windowBackgroundColor)
+                FullDiskAccessOverlay(isPresented: .constant(true))
+            }
+            .frame(width: SnapshotFixtures.panelSize.width, height: SnapshotFixtures.panelSize.height)
+
+            assertSnapshot(
+                of: SnapshotExport.makeHostedPanel(rootView: root),
+                as: .image(precision: 0.98, perceptualPrecision: 0.98),
+                named: "full-disk-access-dialog",
+                testName: #function
+            )
+        }
+    }
+
     func testMenuBarPillGood() {
         let image = SnapshotFixtures.diskMonitor(for: .good).makeMenuBarImage()
         assertSnapshot(

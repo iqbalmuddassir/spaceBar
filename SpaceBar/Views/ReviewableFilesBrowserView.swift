@@ -28,6 +28,8 @@ struct ReviewableFilesBrowserView: View {
             }
         }
         .animation(LiquidGlassMotion.overlay(reduceMotion), value: store.confirmDelete)
+        .animation(.snappy(duration: 0.25), value: store.sortOrder)
+        .animation(.snappy(duration: 0.25), value: store.kindFilter)
     }
 
     private var header: some View {
@@ -40,6 +42,7 @@ struct ReviewableFilesBrowserView: View {
             }
             .liquidPillButtonStyle()
             .liquidGlassEffectID(navigationGlassID, in: glassNamespace)
+            .keyboardShortcut(.cancelAction)
 
             Spacer()
 
@@ -64,38 +67,46 @@ struct ReviewableFilesBrowserView: View {
             Button {
                 store.scan()
             } label: {
-                Image(systemName: "arrow.clockwise")
-                    .font(.body.weight(.semibold))
+                Group {
+                    if store.isScanning {
+                        ProgressView().controlSize(.small)
+                    } else {
+                        Image(systemName: "arrow.clockwise")
+                            .font(.body.weight(.semibold))
+                    }
+                }
+                .frame(width: 16, height: 16)
             }
             .liquidChipButtonStyle()
             .disabled(store.isScanning || store.isDeleting)
             .help("Rescan")
+            .accessibilityLabel("Rescan \(store.title)")
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
     }
 
     private var toolbar: some View {
-        HStack(spacing: 8) {
-            Button("Select All") { store.selectAll() }
-                .disabled(store.files.isEmpty || store.isDeleting)
+        VStack(spacing: 8) {
+            HStack(spacing: 8) {
+                Button(store.areAllVisibleSelected ? "Select None" : "Select All") {
+                    store.toggleSelectAll()
+                }
+                .disabled(store.visibleFiles.isEmpty || store.isDeleting)
                 .liquidPillButtonStyle()
-            Button("Select None") { store.selectNone() }
-                .disabled(store.selectedIDs.isEmpty || store.isDeleting)
-                .liquidPillButtonStyle()
-            Button("Older than 30d") { store.selectOlderThan(days: 30) }
-                .disabled(store.files.isEmpty || store.isDeleting)
-                .liquidPillButtonStyle()
-            Spacer(minLength: 8)
-            if !store.selectedIDs.isEmpty {
-                Text("Will free \(store.selectedBytesLabel)")
-                    .contentTransition(.numericText())
-                    .liquidPillLabel()
-            } else if store.totalBytes > 0 {
-                Text("Select items to free up to \(store.totalBytesLabel)")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
+                .keyboardShortcut("a", modifiers: .command)
+
+                Button("Older than 30d") { store.selectOlderThan(days: 30) }
+                    .disabled(store.visibleFiles.isEmpty || store.isDeleting)
+                    .liquidPillButtonStyle()
+
+                Spacer(minLength: 8)
+
+                sortPicker
+            }
+
+            if !store.availableKindFilters.isEmpty {
+                kindFilterRow
             }
         }
         .padding(.horizontal, 16)
@@ -105,18 +116,82 @@ struct ReviewableFilesBrowserView: View {
         }
     }
 
+    private var sortPicker: some View {
+        Picker("Sort", selection: $store.sortOrder) {
+            ForEach(ReviewableSortOrder.allCases) { order in
+                Text(order.label).tag(order)
+            }
+        }
+        .pickerStyle(.segmented)
+        .labelsHidden()
+        .controlSize(.small)
+        .fixedSize()
+        .disabled(store.isDeleting)
+        .help("Sort order")
+        .accessibilityLabel("Sort order")
+    }
+
+    private var kindFilterRow: some View {
+        HStack(spacing: 6) {
+            filterChip(title: "All", count: store.files.count, isOn: store.kindFilter == nil) {
+                store.kindFilter = nil
+            }
+            ForEach(store.availableKindFilters) { kind in
+                filterChip(
+                    title: kind.pluralLabel.capitalized,
+                    count: store.count(of: kind),
+                    isOn: store.kindFilter == kind
+                ) {
+                    store.kindFilter = store.kindFilter == kind ? nil : kind
+                }
+            }
+            Spacer(minLength: 0)
+        }
+    }
+
+    private func filterChip(
+        title: String,
+        count: Int,
+        isOn: Bool,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            HStack(spacing: 5) {
+                Text(title)
+                Text("\(count)")
+                    .monospacedDigit()
+                    .foregroundStyle(.secondary)
+            }
+            .font(.caption.weight(.medium))
+        }
+        .buttonStyle(.plain)
+        .padding(.horizontal, 9)
+        .padding(.vertical, 4)
+        .background {
+            Capsule().fill(isOn ? Color.accentColor.opacity(0.20) : Color.primary.opacity(0.07))
+        }
+        .overlay {
+            Capsule().strokeBorder(
+                isOn ? Color.accentColor.opacity(0.55) : Color.clear,
+                lineWidth: 1
+            )
+        }
+        .foregroundStyle(isOn ? Color.accentColor : .primary)
+        .disabled(store.isDeleting)
+        .accessibilityAddTraits(isOn ? [.isButton, .isSelected] : .isButton)
+    }
+
     @ViewBuilder
     private var content: some View {
         if store.isScanning, store.files.isEmpty {
-            VStack(spacing: 10) {
+            centeredState {
                 ProgressView()
                 Text(store.category.scanningLocationsDetail)
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else if store.files.isEmpty {
-            VStack(spacing: 8) {
+            centeredState {
                 Image(systemName: store.category.symbolName)
                     .font(.system(size: 28))
                     .foregroundStyle(.secondary)
@@ -126,50 +201,58 @@ struct ReviewableFilesBrowserView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-        } else {
-            List {
-                ForEach(store.files) { file in
-                    ReviewableFileRow(
-                        file: file,
-                        isSelected: store.selectedIDs.contains(file.id)
-                    ) {
-                        store.toggleSelection(file.id)
-                    }
-                    .listRowInsets(EdgeInsets(top: 8, leading: 12, bottom: 8, trailing: 12))
-                    .listRowBackground(Color.clear)
-                }
+        } else if store.visibleFiles.isEmpty {
+            centeredState {
+                Text("Nothing matches this filter")
+                    .font(.callout.weight(.medium))
+                Button("Show all") { store.kindFilter = nil }
+                    .liquidPillButtonStyle()
             }
-            .listStyle(.plain)
-            .scrollContentBackground(.hidden)
-            .disabled(store.isDeleting)
+        } else {
+            fileList
         }
     }
 
-    private var footer: some View {
-        HStack {
-            if store.isDeleting {
-                ProgressView()
-                    .controlSize(.small)
-                Text("Deleting…")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            } else if let status = store.statusMessage {
-                Text(status)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-            } else {
-                Text("Checked = delete · unchecked = keep")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+    private var fileList: some View {
+        ScrollView {
+            LazyVStack(spacing: 2) {
+                ForEach(store.visibleFiles) { file in
+                    ReviewableFileRow(
+                        file: file,
+                        isSelected: store.selectedIDs.contains(file.id),
+                        onToggle: { store.toggleSelection(file.id) },
+                        onReveal: { store.revealInFinder(file) }
+                    )
+                }
             }
-            Spacer()
-            Button("Delete Selected") {
+            .padding(.horizontal, 8)
+            .padding(.vertical, 6)
+        }
+        .disabled(store.isDeleting)
+    }
+
+    private func centeredState(@ViewBuilder content: () -> some View) -> some View {
+        VStack(spacing: 8) {
+            content()
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private var footer: some View {
+        HStack(spacing: 8) {
+            footerStatus
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .lineLimit(2)
+
+            Spacer(minLength: 8)
+
+            Button(deleteButtonTitle) {
                 store.requestDeleteSelected()
             }
             .liquidButtonStyle(prominent: true, tint: .red)
             .disabled(store.selectedIDs.isEmpty || store.isDeleting)
+            .keyboardShortcut(.delete, modifiers: .command)
         }
         .padding(.horizontal, 16)
         .padding(.top, 10)
@@ -179,121 +262,54 @@ struct ReviewableFilesBrowserView: View {
         }
     }
 
+    private var deleteButtonTitle: String {
+        store.selectedIDs.isEmpty ? "Delete" : "Delete \(store.selectedIDs.count) · \(store.selectedBytesLabel)"
+    }
+
+    @ViewBuilder
+    private var footerStatus: some View {
+        if store.isDeleting {
+            HStack(spacing: 6) {
+                ProgressView().controlSize(.small)
+                Text("Deleting…")
+            }
+        } else if !store.selectedIDs.isEmpty {
+            VStack(alignment: .leading, spacing: 1) {
+                Text("\(store.selectedIDs.count) of \(store.files.count) selected")
+                if store.hasSelectionOutsideFilter {
+                    Text("Includes items hidden by the current filter")
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                }
+            }
+        } else if let status = store.statusMessage {
+            Text(status)
+        } else {
+            Text("Checked = delete · unchecked = keep")
+        }
+    }
+
     private var confirmOverlay: some View {
         ZStack {
-            Color.black.opacity(0.32)
-                .ignoresSafeArea()
-                .onTapGesture { store.cancelDelete() }
+            DialogBackdrop { store.cancelDelete() }
 
-            VStack(alignment: .leading, spacing: 12) {
-                Text("Delete \(store.selectedIDs.count) items?")
-                    .font(.headline)
-                Text("Permanently deletes \(store.selectedBytesLabel). Unchecked items are kept.")
+            PanelDialog(
+                symbol: "trash",
+                tint: .red,
+                title: store.selectedIDs.count == 1 ? "Delete 1 item?" : "Delete \(store.selectedIDs.count) items?",
+                message: "Frees \(store.selectedBytesLabel). Unchecked items are kept."
+            ) {
+                Text("This cannot be undone.")
                     .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-
-                HStack(spacing: 10) {
-                    Button("Cancel") { store.cancelDelete() }
-                        .liquidButtonStyle()
-                        .frame(maxWidth: .infinity)
-                    Button("Delete") {
-                        store.deleteSelected(diskMonitor: diskMonitor)
-                    }
-                    .liquidButtonStyle(prominent: true, tint: .red)
-                    .frame(maxWidth: .infinity)
-                    .keyboardShortcut(.defaultAction)
+                    .foregroundStyle(.tertiary)
+            } actions: {
+                DialogButton(title: "Cancel") { store.cancelDelete() }
+                    .keyboardShortcut(.cancelAction)
+                DialogButton(title: "Delete", isDefault: true, tint: .red) {
+                    store.deleteSelected(diskMonitor: diskMonitor)
                 }
+                .keyboardShortcut(.defaultAction)
             }
-            .padding(18)
-            .frame(maxWidth: 320)
-            .liquidDialogSurface(tint: .red)
-            .padding(20)
-        }
-    }
-}
-
-private struct ReviewableFileRow: View {
-    let file: ReviewableFile
-    let isSelected: Bool
-    let onToggle: () -> Void
-
-    var body: some View {
-        Button(action: onToggle) {
-            HStack(spacing: 10) {
-                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                    .foregroundStyle(isSelected ? Color.accentColor : Color.secondary)
-                    .font(.title3)
-                    .symbolEffect(.bounce, value: isSelected)
-
-                ReviewableFileThumbnail(file: file)
-                    .frame(width: 44, height: 44)
-                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8, style: .continuous)
-                            .strokeBorder(Color.primary.opacity(0.08), lineWidth: 1)
-                    )
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(file.name)
-                        .font(.system(.body, weight: .medium))
-                        .lineLimit(1)
-                        .truncationMode(.middle)
-                    HStack(spacing: 6) {
-                        Text(file.kind.label)
-                        Text("·")
-                        Text(file.relativeAgeLabel)
-                        Text("·")
-                        Text(file.sizeLabel)
-                    }
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-                }
-
-                Spacer(minLength: 0)
-            }
-            .contentShape(Rectangle())
-            .opacity(isSelected ? 1 : 0.72)
-            .animation(.spring(response: 0.28, dampingFraction: 0.85), value: isSelected)
-        }
-        .buttonStyle(.plain)
-    }
-}
-
-private struct ReviewableFileThumbnail: View {
-    let file: ReviewableFile
-    @State private var image: NSImage?
-
-    var body: some View {
-        ZStack {
-            Color.primary.opacity(0.06)
-            if let image {
-                Image(nsImage: image)
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-            } else {
-                Image(systemName: Self.placeholderSymbol(for: file.kind))
-                    .foregroundStyle(.secondary)
-            }
-        }
-        .task(id: file.url) {
-            guard file.kind == .screenshot else {
-                image = nil
-                return
-            }
-            let url = file.url
-            image = await Task.detached(priority: .utility) {
-                NSImage(contentsOf: url)
-            }.value
-        }
-    }
-
-    private static func placeholderSymbol(for kind: ReviewableFileKind) -> String {
-        switch kind {
-        case .recording: "video.fill"
-        case .installer: "shippingbox.fill"
-        case .screenshot: "photo"
         }
     }
 }
@@ -357,5 +373,6 @@ struct ReviewableFilesSummaryRow: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .accessibilityLabel("\(store.title). \(store.summaryLabel). Opens the review list.")
     }
 }
