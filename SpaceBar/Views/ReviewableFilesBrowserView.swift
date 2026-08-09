@@ -1,11 +1,15 @@
 import AppKit
 import SwiftUI
 
-struct MediaCaptureBrowserView: View {
-    @EnvironmentObject private var mediaStore: MediaCaptureStore
+struct ReviewableFilesBrowserView: View {
+    @ObservedObject var store: ReviewableFilesStore
     @EnvironmentObject private var diskMonitor: DiskSpaceMonitor
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.liquidGlassNamespace) private var glassNamespace
+
+    private var navigationGlassID: String {
+        "reviewable-nav-\(store.category.rawValue)"
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -18,36 +22,38 @@ struct MediaCaptureBrowserView: View {
             PanelGlassBackground(cornerRadius: 18)
         }
         .overlay {
-            if mediaStore.confirmDelete {
+            if store.confirmDelete {
                 confirmOverlay
                     .transition(.opacity.combined(with: .scale(scale: 0.96)))
             }
         }
-        .animation(LiquidGlassMotion.overlay(reduceMotion), value: mediaStore.confirmDelete)
+        .animation(LiquidGlassMotion.overlay(reduceMotion), value: store.confirmDelete)
     }
 
     private var header: some View {
         HStack {
             Button {
-                mediaStore.closeBrowser()
+                store.closeBrowser()
             } label: {
                 Label("Back", systemImage: "chevron.left")
                     .labelStyle(.titleAndIcon)
             }
             .liquidPillButtonStyle()
-            .liquidGlassEffectID("media-nav", in: glassNamespace)
+            .liquidGlassEffectID(navigationGlassID, in: glassNamespace)
 
             Spacer()
 
             VStack(spacing: 3) {
-                Text("Screenshots & Recordings")
+                Text(store.title)
                     .font(.headline)
-                if mediaStore.totalBytes > 0 {
-                    Text("Up to \(mediaStore.totalBytesLabel) reclaimable")
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+                if store.totalBytes > 0 {
+                    Text("Up to \(store.totalBytesLabel) reclaimable")
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(.secondary)
                 } else {
-                    Text(mediaStore.summaryLabel)
+                    Text(store.summaryLabel)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -56,13 +62,13 @@ struct MediaCaptureBrowserView: View {
             Spacer()
 
             Button {
-                mediaStore.scan()
+                store.scan()
             } label: {
                 Image(systemName: "arrow.clockwise")
                     .font(.body.weight(.semibold))
             }
             .liquidChipButtonStyle()
-            .disabled(mediaStore.isScanning || mediaStore.isDeleting)
+            .disabled(store.isScanning || store.isDeleting)
             .help("Rescan")
         }
         .padding(.horizontal, 16)
@@ -71,22 +77,22 @@ struct MediaCaptureBrowserView: View {
 
     private var toolbar: some View {
         HStack(spacing: 8) {
-            Button("Select All") { mediaStore.selectAll() }
-                .disabled(mediaStore.items.isEmpty || mediaStore.isDeleting)
+            Button("Select All") { store.selectAll() }
+                .disabled(store.files.isEmpty || store.isDeleting)
                 .liquidPillButtonStyle()
-            Button("Select None") { mediaStore.selectNone() }
-                .disabled(mediaStore.selectedIDs.isEmpty || mediaStore.isDeleting)
+            Button("Select None") { store.selectNone() }
+                .disabled(store.selectedIDs.isEmpty || store.isDeleting)
                 .liquidPillButtonStyle()
-            Button("Older than 30d") { mediaStore.selectOlderThan(days: 30) }
-                .disabled(mediaStore.items.isEmpty || mediaStore.isDeleting)
+            Button("Older than 30d") { store.selectOlderThan(days: 30) }
+                .disabled(store.files.isEmpty || store.isDeleting)
                 .liquidPillButtonStyle()
             Spacer(minLength: 8)
-            if !mediaStore.selectedIDs.isEmpty {
-                Text("Will free \(mediaStore.selectedBytesLabel)")
+            if !store.selectedIDs.isEmpty {
+                Text("Will free \(store.selectedBytesLabel)")
                     .contentTransition(.numericText())
                     .liquidPillLabel()
-            } else if mediaStore.totalBytes > 0 {
-                Text("Select items to free up to \(mediaStore.totalBytesLabel)")
+            } else if store.totalBytes > 0 {
+                Text("Select items to free up to \(store.totalBytesLabel)")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
@@ -101,34 +107,34 @@ struct MediaCaptureBrowserView: View {
 
     @ViewBuilder
     private var content: some View {
-        if mediaStore.isScanning, mediaStore.items.isEmpty {
+        if store.isScanning, store.files.isEmpty {
             VStack(spacing: 10) {
                 ProgressView()
-                Text("Scanning Desktop, Pictures, Movies…")
+                Text(store.category.scanningLocationsDetail)
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-        } else if mediaStore.items.isEmpty {
+        } else if store.files.isEmpty {
             VStack(spacing: 8) {
-                Image(systemName: "photo.on.rectangle.angled")
+                Image(systemName: store.category.symbolName)
                     .font(.system(size: 28))
                     .foregroundStyle(.secondary)
-                Text("No screenshots or recordings found")
+                Text(store.category.emptyStatus)
                     .font(.callout.weight(.medium))
-                Text("Checked Desktop, Pictures, Movies, Downloads")
+                Text(store.category.checkedLocationsDetail)
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else {
             List {
-                ForEach(mediaStore.items) { item in
-                    MediaCaptureRow(
-                        item: item,
-                        isSelected: mediaStore.selectedIDs.contains(item.id)
+                ForEach(store.files) { file in
+                    ReviewableFileRow(
+                        file: file,
+                        isSelected: store.selectedIDs.contains(file.id)
                     ) {
-                        mediaStore.toggleSelection(item.id)
+                        store.toggleSelection(file.id)
                     }
                     .listRowInsets(EdgeInsets(top: 8, leading: 12, bottom: 8, trailing: 12))
                     .listRowBackground(Color.clear)
@@ -136,19 +142,19 @@ struct MediaCaptureBrowserView: View {
             }
             .listStyle(.plain)
             .scrollContentBackground(.hidden)
-            .disabled(mediaStore.isDeleting)
+            .disabled(store.isDeleting)
         }
     }
 
     private var footer: some View {
         HStack {
-            if mediaStore.isDeleting {
+            if store.isDeleting {
                 ProgressView()
                     .controlSize(.small)
                 Text("Deleting…")
                     .font(.caption)
                     .foregroundStyle(.secondary)
-            } else if let status = mediaStore.statusMessage {
+            } else if let status = store.statusMessage {
                 Text(status)
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -160,10 +166,10 @@ struct MediaCaptureBrowserView: View {
             }
             Spacer()
             Button("Delete Selected") {
-                mediaStore.requestDeleteSelected()
+                store.requestDeleteSelected()
             }
             .liquidButtonStyle(prominent: true, tint: .red)
-            .disabled(mediaStore.selectedIDs.isEmpty || mediaStore.isDeleting)
+            .disabled(store.selectedIDs.isEmpty || store.isDeleting)
         }
         .padding(.horizontal, 16)
         .padding(.top, 10)
@@ -177,22 +183,22 @@ struct MediaCaptureBrowserView: View {
         ZStack {
             Color.black.opacity(0.32)
                 .ignoresSafeArea()
-                .onTapGesture { mediaStore.cancelDelete() }
+                .onTapGesture { store.cancelDelete() }
 
             VStack(alignment: .leading, spacing: 12) {
-                Text("Delete \(mediaStore.selectedIDs.count) items?")
+                Text("Delete \(store.selectedIDs.count) items?")
                     .font(.headline)
-                Text("Permanently deletes \(mediaStore.selectedBytesLabel). Unchecked items are kept.")
+                Text("Permanently deletes \(store.selectedBytesLabel). Unchecked items are kept.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
 
                 HStack(spacing: 10) {
-                    Button("Cancel") { mediaStore.cancelDelete() }
+                    Button("Cancel") { store.cancelDelete() }
                         .liquidButtonStyle()
                         .frame(maxWidth: .infinity)
                     Button("Delete") {
-                        mediaStore.deleteSelected(diskMonitor: diskMonitor)
+                        store.deleteSelected(diskMonitor: diskMonitor)
                     }
                     .liquidButtonStyle(prominent: true, tint: .red)
                     .frame(maxWidth: .infinity)
@@ -207,8 +213,8 @@ struct MediaCaptureBrowserView: View {
     }
 }
 
-private struct MediaCaptureRow: View {
-    let item: MediaCaptureItem
+private struct ReviewableFileRow: View {
+    let file: ReviewableFile
     let isSelected: Bool
     let onToggle: () -> Void
 
@@ -220,7 +226,7 @@ private struct MediaCaptureRow: View {
                     .font(.title3)
                     .symbolEffect(.bounce, value: isSelected)
 
-                MediaThumbnailView(item: item)
+                ReviewableFileThumbnail(file: file)
                     .frame(width: 44, height: 44)
                     .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                     .overlay(
@@ -229,16 +235,16 @@ private struct MediaCaptureRow: View {
                     )
 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(item.name)
+                    Text(file.name)
                         .font(.system(.body, weight: .medium))
                         .lineLimit(1)
                         .truncationMode(.middle)
                     HStack(spacing: 6) {
-                        Text(item.kind.label)
+                        Text(file.kind.label)
                         Text("·")
-                        Text(item.relativeAgeLabel)
+                        Text(file.relativeAgeLabel)
                         Text("·")
-                        Text(item.sizeLabel)
+                        Text(file.sizeLabel)
                     }
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -255,8 +261,8 @@ private struct MediaCaptureRow: View {
     }
 }
 
-private struct MediaThumbnailView: View {
-    let item: MediaCaptureItem
+private struct ReviewableFileThumbnail: View {
+    let file: ReviewableFile
     @State private var image: NSImage?
 
     var body: some View {
@@ -267,44 +273,58 @@ private struct MediaThumbnailView: View {
                     .resizable()
                     .aspectRatio(contentMode: .fill)
             } else {
-                Image(systemName: item.kind == .recording ? "video.fill" : "photo")
+                Image(systemName: Self.placeholderSymbol(for: file.kind))
                     .foregroundStyle(.secondary)
             }
         }
-        .task(id: item.url) {
-            guard item.kind == .screenshot else {
+        .task(id: file.url) {
+            guard file.kind == .screenshot else {
                 image = nil
                 return
             }
-            let url = item.url
+            let url = file.url
             image = await Task.detached(priority: .utility) {
                 NSImage(contentsOf: url)
             }.value
         }
     }
+
+    private static func placeholderSymbol(for kind: ReviewableFileKind) -> String {
+        switch kind {
+        case .recording: "video.fill"
+        case .installer: "shippingbox.fill"
+        case .screenshot: "photo"
+        }
+    }
 }
 
-struct MediaCaptureSummaryRow: View {
-    @EnvironmentObject private var mediaStore: MediaCaptureStore
+struct ReviewableFilesSummaryRow: View {
+    @ObservedObject var store: ReviewableFilesStore
     @Environment(\.liquidGlassNamespace) private var glassNamespace
+
+    private var navigationGlassID: String {
+        "reviewable-nav-\(store.category.rawValue)"
+    }
 
     var body: some View {
         Button {
-            mediaStore.openBrowser()
+            store.openBrowser()
         } label: {
             HStack(spacing: 12) {
                 VStack(alignment: .leading, spacing: 3) {
-                    Text("Screenshots & Recordings")
+                    Text(store.title)
                         .font(.system(.body, weight: .medium))
-                    if mediaStore.isScanning {
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+                    if store.isScanning {
                         Text("Scanning…")
                             .font(.caption)
                             .foregroundStyle(.secondary)
-                    } else if mediaStore.totalBytes > 0 {
-                        Text(mediaStore.reclaimHint)
+                    } else if store.totalBytes > 0 {
+                        Text(store.reclaimHint)
                             .font(.caption.weight(.semibold))
                             .foregroundStyle(Color.accentColor)
-                        Text(mediaStore.summaryLabel)
+                        Text(store.summaryLabel)
                             .font(.caption2)
                             .foregroundStyle(.secondary)
                             .lineLimit(2)
@@ -317,9 +337,9 @@ struct MediaCaptureSummaryRow: View {
 
                 Spacer(minLength: 8)
 
-                if mediaStore.totalBytes > 0 {
+                if store.totalBytes > 0 {
                     VStack(alignment: .trailing, spacing: 2) {
-                        Text(mediaStore.totalBytesLabel)
+                        Text(store.totalBytesLabel)
                             .font(.system(.body, design: .rounded).weight(.semibold))
                             .monospacedDigit()
                         Text("reclaimable")
@@ -330,7 +350,7 @@ struct MediaCaptureSummaryRow: View {
 
                 Text("Review")
                     .liquidPillLabel()
-                    .liquidGlassEffectID("media-nav", in: glassNamespace)
+                    .liquidGlassEffectID(navigationGlassID, in: glassNamespace)
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 11)

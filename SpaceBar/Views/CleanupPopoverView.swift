@@ -4,15 +4,15 @@ import SwiftUI
 struct CleanupPopoverView: View {
     @EnvironmentObject private var diskMonitor: DiskSpaceMonitor
     @EnvironmentObject private var store: CleanupStore
-    @EnvironmentObject private var mediaStore: MediaCaptureStore
+    @EnvironmentObject private var reviewCoordinator: ReviewableFilesCoordinator
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @Namespace private var glassNamespace
 
     var body: some View {
         ZStack {
-            if mediaStore.showBrowser {
-                MediaCaptureBrowserView()
+            if let activeStore = reviewCoordinator.activeBrowserStore {
+                ReviewableFilesBrowserView(store: activeStore)
                     .transition(.asymmetric(
                         insertion: .move(edge: .trailing).combined(with: .opacity),
                         removal: .move(edge: .trailing).combined(with: .opacity)
@@ -33,7 +33,7 @@ struct CleanupPopoverView: View {
         .onAppear {
             store.startInitialScan()
         }
-        .animation(LiquidGlassMotion.panel(reduceMotion), value: mediaStore.showBrowser)
+        .animation(LiquidGlassMotion.panel(reduceMotion), value: reviewCoordinator.activeBrowserStore != nil)
         .animation(LiquidGlassMotion.overlay(reduceMotion), value: store.pendingConfirmID)
         .animation(LiquidGlassMotion.overlay(reduceMotion), value: store.showFullDiskAccessPrompt)
         .animation(LiquidGlassMotion.panel(reduceMotion), value: store.isScanning)
@@ -86,7 +86,7 @@ struct CleanupPopoverView: View {
                 Spacer()
                 Button {
                     store.scanAll(clearExisting: true)
-                    mediaStore.scan()
+                    reviewCoordinator.scanAll()
                     diskMonitor.refresh()
                 } label: {
                     Image(systemName: "arrow.clockwise")
@@ -103,7 +103,7 @@ struct CleanupPopoverView: View {
                 .disabled(
                     store.isScanning
                         || store.isDeletingAny
-                        || mediaStore.isDeleting
+                        || reviewCoordinator.isDeletingAny
                         || store.pendingConfirmID != nil
                 )
                 .help("Rescan")
@@ -121,8 +121,8 @@ struct CleanupPopoverView: View {
     @ViewBuilder
     private var reclaimChip: some View {
         let cacheReclaim = store.totalReclaimable
-        let mediaReclaim = mediaStore.totalBytes
-        let combined = cacheReclaim + mediaReclaim
+        let filesReclaim = reviewCoordinator.totalReclaimableBytes
+        let combined = cacheReclaim + filesReclaim
         if combined > 0 {
             HStack(spacing: 6) {
                 Image(systemName: "arrow.down.circle.fill")
@@ -135,8 +135,8 @@ struct CleanupPopoverView: View {
                     if cacheReclaim > 0 {
                         Text("Caches \(store.totalReclaimableLabel)")
                     }
-                    if mediaReclaim > 0 {
-                        Text("Media \(mediaStore.totalBytesLabel)")
+                    if filesReclaim > 0 {
+                        Text("Files \(reviewCoordinator.totalReclaimableLabel)")
                     }
                 }
                 .font(.caption2)
@@ -153,8 +153,9 @@ struct CleanupPopoverView: View {
     private var content: some View {
         let cleanupItems = store.results.filter { !$0.target.isPermanent }
         let trashItems = store.results.filter(\.target.isPermanent)
+        let reviewStores = reviewCoordinator.stores
 
-        if store.isScanning, store.results.isEmpty, mediaStore.items.isEmpty {
+        if store.isScanning, store.results.isEmpty, reviewCoordinator.totalReclaimableBytes == 0 {
             VStack(spacing: 12) {
                 ProgressView()
                 Text("Scanning…")
@@ -165,8 +166,13 @@ struct CleanupPopoverView: View {
         } else {
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 0) {
-                    sectionLabel("Media")
-                    MediaCaptureSummaryRow()
+                    sectionLabel("Files")
+                    ForEach(Array(reviewStores.enumerated()), id: \.element.category) { index, reviewStore in
+                        ReviewableFilesSummaryRow(store: reviewStore)
+                        if index < reviewStores.count - 1 {
+                            Divider().padding(.leading, 16)
+                        }
+                    }
 
                     if !cleanupItems.isEmpty {
                         sectionLabel("Cleanup")

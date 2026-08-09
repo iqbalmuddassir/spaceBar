@@ -48,10 +48,21 @@ final class PanelSnapshotTests: XCTestCase {
     }
 
     func testMediaBrowser_macOS14() {
-        assertMediaBrowser(
+        assertReviewBrowser(
+            for: .screenshotsAndRecordings,
             glass: false,
             named: "media-browser-macos14",
-            exportDocs: true,
+            exportDocsAs: "spacebar-media-browser",
+            testName: #function
+        )
+    }
+
+    func testInstallerBrowser_macOS14() {
+        assertReviewBrowser(
+            for: .installerPackages,
+            glass: false,
+            named: "installer-browser-macos14",
+            exportDocsAs: "spacebar-installer-browser",
             testName: #function
         )
     }
@@ -88,9 +99,20 @@ final class PanelSnapshotTests: XCTestCase {
 
     func testMediaBrowser_macOS26() throws {
         try requireLiquidGlassHost()
-        assertMediaBrowser(
+        assertReviewBrowser(
+            for: .screenshotsAndRecordings,
             glass: true,
             named: "media-browser-macos26",
+            testName: #function
+        )
+    }
+
+    func testInstallerBrowser_macOS26() throws {
+        try requireLiquidGlassHost()
+        assertReviewBrowser(
+            for: .installerPackages,
+            glass: true,
+            named: "installer-browser-macos26",
             testName: #function
         )
     }
@@ -161,22 +183,23 @@ final class PanelSnapshotTests: XCTestCase {
         }
     }
 
-    private func assertMediaBrowser(
+    private func assertReviewBrowser(
+        for category: ReviewableFileCategory,
         glass: Bool,
         named name: String,
-        exportDocs: Bool = false,
+        exportDocsAs docsName: String? = nil,
         testName: String
     ) {
         LiquidGlassRuntime.withChrome(glass) {
-            let hosting = makeMediaBrowser()
+            let hosting = makeReviewBrowser(for: category)
             assertSnapshot(
                 of: hosting,
                 as: .image(precision: 0.98, perceptualPrecision: 0.98),
                 named: name,
                 testName: testName
             )
-            if exportDocs {
-                SnapshotExport.exportHiResSnapshot(from: hosting, named: "spacebar-media-browser")
+            if let docsName {
+                SnapshotExport.exportHiResSnapshot(from: hosting, named: docsName)
             }
         }
     }
@@ -184,26 +207,25 @@ final class PanelSnapshotTests: XCTestCase {
     private func makeCleanupPanel(for freeSpaceCase: SnapshotFixtures.FreeSpaceCase) -> NSView {
         let monitor = SnapshotFixtures.diskMonitor(for: freeSpaceCase)
         let store = SnapshotFixtures.cleanupStore()
-        let mediaStore = SnapshotFixtures.mediaStore()
+        let reviewCoordinator = SnapshotFixtures.reviewCoordinator()
 
         let root = CleanupPopoverView()
             .environmentObject(monitor)
             .environmentObject(store)
-            .environmentObject(mediaStore)
+            .environmentObject(reviewCoordinator)
             .frame(width: SnapshotFixtures.panelSize.width, height: SnapshotFixtures.panelSize.height)
 
         return SnapshotExport.makeHostedPanel(rootView: root)
     }
 
-    private func makeMediaBrowser() -> NSView {
+    private func makeReviewBrowser(for category: ReviewableFileCategory) -> NSView {
         let monitor = SnapshotFixtures.diskMonitor(for: .good)
-        let mediaStore = SnapshotFixtures.mediaStore()
-        mediaStore.showBrowser = true
-        mediaStore.selectAll()
+        let store = SnapshotFixtures.reviewStore(for: category)
+        store.showBrowser = true
+        store.selectAll()
 
-        let root = MediaCaptureBrowserView()
+        let root = ReviewableFilesBrowserView(store: store)
             .environmentObject(monitor)
-            .environmentObject(mediaStore)
             .frame(width: SnapshotFixtures.panelSize.width, height: SnapshotFixtures.panelSize.height)
 
         return SnapshotExport.makeHostedPanel(rootView: root)
