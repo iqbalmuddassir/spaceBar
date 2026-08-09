@@ -16,7 +16,7 @@ struct SpaceBarApp: App {
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private let diskMonitor = DiskSpaceMonitor()
     private let cleanupStore = CleanupStore()
-    private let mediaStore = MediaCaptureStore()
+    private let reviewCoordinator = ReviewableFilesCoordinator()
     private var statusItemController: StatusItemController?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -24,10 +24,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         statusItemController = StatusItemController(
             monitor: diskMonitor,
             store: cleanupStore,
-            mediaStore: mediaStore
+            reviewCoordinator: reviewCoordinator
         )
         cleanupStore.startInitialScan()
-        mediaStore.scan()
+        reviewCoordinator.scanAll()
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {

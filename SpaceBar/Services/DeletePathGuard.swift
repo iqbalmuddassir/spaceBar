@@ -92,7 +92,7 @@ enum DeletePathGuard {
         }
     }
 
-    static func validateForMediaDelete(_ url: URL) throws {
+    static func validateForReviewableFileDelete(_ url: URL) throws {
         if isForbiddenRoot(url) {
             throw Refusal.forbiddenRoot
         }

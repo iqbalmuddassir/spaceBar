@@ -49,10 +49,26 @@ enum SnapshotFixtures {
     }
 
     @MainActor
-    static func mediaStore() -> MediaCaptureStore {
-        let store = MediaCaptureStore()
-        store.loadFixture(items: sampleMediaItems())
+    static func reviewCoordinator() -> ReviewableFilesCoordinator {
+        let coordinator = ReviewableFilesCoordinator()
+        for store in coordinator.stores {
+            store.loadFixture(files: sampleFiles(for: store.category))
+        }
+        return coordinator
+    }
+
+    @MainActor
+    static func reviewStore(for category: ReviewableFileCategory) -> ReviewableFilesStore {
+        let store = ReviewableFilesStore(category: category)
+        store.loadFixture(files: sampleFiles(for: category))
         return store
+    }
+
+    static func sampleFiles(for category: ReviewableFileCategory) -> [ReviewableFile] {
+        switch category {
+        case .screenshotsAndRecordings: sampleCaptureFiles()
+        case .installerPackages: sampleInstallerFiles()
+        }
     }
 
     private static func sampleCleanupResults() -> [TargetScanResult] {
@@ -96,30 +112,52 @@ enum SnapshotFixtures {
         ]
     }
 
-    private static func sampleMediaItems() -> [MediaCaptureItem] {
+    private static func sampleCaptureFiles() -> [ReviewableFile] {
         let desktop = FileManager.default.homeDirectoryForCurrentUser
             .appendingPathComponent("Desktop", isDirectory: true)
         let modified = Calendar.current.date(from: DateComponents(year: 2026, month: 7, day: 1))!
         return [
-            MediaCaptureItem(
+            ReviewableFile(
                 id: desktop.appendingPathComponent("Screenshot 2026-07-01 at 10.00.00.png"),
                 url: desktop.appendingPathComponent("Screenshot 2026-07-01 at 10.00.00.png"),
                 kind: .screenshot,
                 byteSize: 2_400_000,
                 modified: modified
             ),
-            MediaCaptureItem(
+            ReviewableFile(
                 id: desktop.appendingPathComponent("Screenshot 2026-07-01 at 11.00.00.png"),
                 url: desktop.appendingPathComponent("Screenshot 2026-07-01 at 11.00.00.png"),
                 kind: .screenshot,
                 byteSize: 1_800_000,
                 modified: modified
             ),
-            MediaCaptureItem(
+            ReviewableFile(
                 id: desktop.appendingPathComponent("Screen Recording 2026-07-01 at 12.00.00.mov"),
                 url: desktop.appendingPathComponent("Screen Recording 2026-07-01 at 12.00.00.mov"),
                 kind: .recording,
                 byteSize: 185_000_000,
+                modified: modified
+            )
+        ]
+    }
+
+    private static func sampleInstallerFiles() -> [ReviewableFile] {
+        let downloads = FileManager.default.homeDirectoryForCurrentUser
+            .appendingPathComponent("Downloads", isDirectory: true)
+        let modified = Calendar.current.date(from: DateComponents(year: 2026, month: 6, day: 15))!
+        return [
+            ReviewableFile(
+                id: downloads.appendingPathComponent("Xcode_16.dmg"),
+                url: downloads.appendingPathComponent("Xcode_16.dmg"),
+                kind: .installer,
+                byteSize: 3_100_000_000,
+                modified: modified
+            ),
+            ReviewableFile(
+                id: downloads.appendingPathComponent("Docker.pkg"),
+                url: downloads.appendingPathComponent("Docker.pkg"),
+                kind: .installer,
+                byteSize: 620_000_000,
                 modified: modified
             )
         ]

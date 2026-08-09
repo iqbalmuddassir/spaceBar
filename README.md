@@ -30,7 +30,8 @@ Developer machines fill up with regenerable junk: Xcode DerivedData, package cac
 - Scans known cache and cleanup locations and lists how much each can free
 - Deletes regenerable caches permanently after you confirm (so space frees immediately)
 - Empties Trash via Finder when you choose Empty Trash
-- Lets you review screenshots and screen recordings, select what to delete, and keep the rest
+- Lets you review screenshots and screen recordings as one item, select what to delete, and keep the rest
+- Lets you review downloaded installer packages (`.dmg`, `.pkg`, `.iso`) as a separate item, select what to delete, and keep the rest
 
 Sizes use decimal GB (1 GB = 1,000³ bytes), same style as System Settings → Storage.
 
@@ -72,7 +73,7 @@ SpaceBar runs as a menu-bar-only app (no Dock icon). Click the pill to open the 
 
 On open it scans cleanup targets under your home folder (and process temp), measures reclaimable size, and shows only targets that have something to free. Cleaning uses a path allowlist so deletes stay limited to approved cache locations. Sensitive targets ask for a stronger confirmation.
 
-Screenshots and recordings are found by common macOS filenames (`Screenshot…`, `Screen Recording…`) in Desktop, Pictures, Movies, Downloads, and your custom screencapture folder if it is under your home directory. You pick what to remove; nothing is deleted until you confirm.
+Screenshots and recordings are found by common macOS filenames (`Screenshot…`, `Screen Recording…`) in Desktop, Pictures, Movies, Downloads, and your custom screencapture folder if it is under your home directory. Downloaded installer packages (`.dmg`, `.pkg`, `.iso`) are found in Downloads and Desktop and shown as their own item. Both are review lists: you pick what to remove, and nothing is deleted until you confirm.
 
 Some folders need Full Disk Access. Emptying Trash may need Automation access to Finder.
 
@@ -110,6 +111,7 @@ Debug builds are tied to the built binary path. After rebuilding, toggle access 
 | Tools | Homebrew, uv, pip, Docker build cache |
 | Trash | Empty Trash |
 | Media | Screenshots and screen recordings (review before delete) |
+| Installers | Downloaded installer packages — `.dmg`, `.pkg`, `.iso` (review before delete) |
 
 Caches are regenerable; the next build or install may take longer. Archives, AVDs, and Trash are treated as higher risk and use stronger confirmation.
 

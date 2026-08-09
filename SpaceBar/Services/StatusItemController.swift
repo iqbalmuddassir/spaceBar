@@ -8,14 +8,14 @@ final class StatusItemController: NSObject, ObservableObject {
     private var panel: NSPanel?
     private let monitor: DiskSpaceMonitor
     private let store: CleanupStore
-    private let mediaStore: MediaCaptureStore
+    private let reviewCoordinator: ReviewableFilesCoordinator
     private var cancellables = Set<AnyCancellable>()
     private var eventMonitor: Any?
 
-    init(monitor: DiskSpaceMonitor, store: CleanupStore, mediaStore: MediaCaptureStore) {
+    init(monitor: DiskSpaceMonitor, store: CleanupStore, reviewCoordinator: ReviewableFilesCoordinator) {
         self.monitor = monitor
         self.store = store
-        self.mediaStore = mediaStore
+        self.reviewCoordinator = reviewCoordinator
         super.init()
         setup()
     }
@@ -62,12 +62,12 @@ final class StatusItemController: NSObject, ObservableObject {
         guard let button = statusItem?.button else { return }
 
         closePanel()
-        mediaStore.closeBrowser()
+        reviewCoordinator.closeAllBrowsers()
 
         let root = CleanupPopoverView()
             .environmentObject(monitor)
             .environmentObject(store)
-            .environmentObject(mediaStore)
+            .environmentObject(reviewCoordinator)
             .frame(width: 420, height: 560)
 
         let hosting = NSHostingController(rootView: root)
@@ -108,7 +108,7 @@ final class StatusItemController: NSObject, ObservableObject {
 
     private func handleOutsideClick() {
         guard let panel, panel.isVisible else { return }
-        if store.showFullDiskAccessPrompt || store.pendingConfirmID != nil || mediaStore.confirmDelete {
+        if store.showFullDiskAccessPrompt || store.pendingConfirmID != nil || reviewCoordinator.isConfirmingAnyDelete {
             return
         }
         let click = NSEvent.mouseLocation
@@ -146,7 +146,7 @@ final class StatusItemController: NSObject, ObservableObject {
 
     private func closePanel() {
         store.resetTransientUIState()
-        mediaStore.resetTransientUIState()
+        reviewCoordinator.resetTransientUIState()
         panel?.orderOut(nil)
         panel = nil
         if let eventMonitor {

@@ -4,8 +4,10 @@ import Foundation
 import SwiftUI
 
 @MainActor
-final class MediaCaptureStore: ObservableObject {
-    @Published private(set) var items: [MediaCaptureItem] = []
+final class ReviewableFilesStore: ObservableObject {
+    let category: ReviewableFileCategory
+
+    @Published private(set) var files: [ReviewableFile] = []
     @Published var selectedIDs: Set<URL> = []
     @Published private(set) var isScanning = false
     @Published private(set) var isDeleting = false
@@ -13,12 +15,20 @@ final class MediaCaptureStore: ObservableObject {
     @Published var showBrowser = false
     @Published var confirmDelete = false
 
-    var selectedItems: [MediaCaptureItem] {
-        items.filter { selectedIDs.contains($0.id) }
+    init(category: ReviewableFileCategory) {
+        self.category = category
+    }
+
+    var title: String {
+        category.title
+    }
+
+    var selectedFiles: [ReviewableFile] {
+        files.filter { selectedIDs.contains($0.id) }
     }
 
     var selectedBytes: UInt64 {
-        selectedItems.reduce(0) { $0 + $1.byteSize }
+        selectedFiles.reduce(0) { $0 + $1.byteSize }
     }
 
     var selectedBytesLabel: String {
@@ -26,45 +36,28 @@ final class MediaCaptureStore: ObservableObject {
     }
 
     var totalBytes: UInt64 {
-        items.reduce(0) { $0 + $1.byteSize }
+        files.reduce(0) { $0 + $1.byteSize }
     }
 
     var totalBytesLabel: String {
         ByteFormatting.string(from: totalBytes)
     }
 
-    var screenshotCount: Int {
-        items.filter { $0.kind == .screenshot }.count
-    }
-
-    var recordingCount: Int {
-        items.filter { $0.kind == .recording }.count
-    }
-
-    var screenshotBytes: UInt64 {
-        items.filter { $0.kind == .screenshot }.reduce(0) { $0 + $1.byteSize }
-    }
-
-    var recordingBytes: UInt64 {
-        items.filter { $0.kind == .recording }.reduce(0) { $0 + $1.byteSize }
-    }
-
     var summaryLabel: String {
-        if items.isEmpty {
+        if files.isEmpty {
             return "None found"
         }
-        var parts: [String] = []
-        if screenshotCount > 0 {
-            parts.append("\(screenshotCount) screenshots (\(ByteFormatting.string(from: screenshotBytes)))")
-        }
-        if recordingCount > 0 {
-            parts.append("\(recordingCount) recordings (\(ByteFormatting.string(from: recordingBytes)))")
+        let parts: [String] = category.kinds.compactMap { kind in
+            let matching = files.filter { $0.kind == kind }
+            guard !matching.isEmpty else { return nil }
+            let bytes = matching.reduce(0) { $0 + $1.byteSize }
+            return "\(matching.count) \(kind.pluralLabel) (\(ByteFormatting.string(from: bytes)))"
         }
         return parts.joined(separator: " · ")
     }
 
     var reclaimHint: String {
-        guard totalBytes > 0 else { return "No media to reclaim" }
+        guard totalBytes > 0 else { return category.emptyReclaimHint }
         return "Can free up to \(totalBytesLabel)"
     }
 
@@ -74,20 +67,21 @@ final class MediaCaptureStore: ObservableObject {
     func scan() {
         scanTask?.cancel()
         isScanning = true
-        statusMessage = "Scanning screenshots & recordings…"
+        statusMessage = category.scanningStatus
+        let category = category
         scanTask = Task {
             let found = await Task.detached(priority: .utility) {
-                MediaCaptureScanner.scan()
+                ReviewableFileScanner.scan(category: category)
             }.value
             guard !Task.isCancelled else {
                 isScanning = false
                 return
             }
-            items = found
+            files = found
             selectedIDs = selectedIDs.intersection(Set(found.map(\.id)))
             isScanning = false
             if found.isEmpty {
-                setStatus("No screenshots or recordings found")
+                setStatus(category.emptyStatus)
             } else {
                 setStatus("Found \(found.count) items · \(totalBytesLabel)")
             }
@@ -96,7 +90,7 @@ final class MediaCaptureStore: ObservableObject {
 
     func openBrowser() {
         showBrowser = true
-        if items.isEmpty, !isScanning {
+        if files.isEmpty, !isScanning {
             scan()
         }
     }
@@ -111,13 +105,13 @@ final class MediaCaptureStore: ObservableObject {
         showBrowser = false
     }
 
-    func loadFixture(items: [MediaCaptureItem], statusMessage: String? = nil) {
+    func loadFixture(files: [ReviewableFile], statusMessage: String? = nil) {
         scanTask?.cancel()
         isScanning = false
         isDeleting = false
         confirmDelete = false
         showBrowser = false
-        self.items = items
+        self.files = files
         selectedIDs = []
         self.statusMessage = statusMessage
     }
@@ -131,7 +125,7 @@ final class MediaCaptureStore: ObservableObject {
     }
 
     func selectAll() {
-        selectedIDs = Set(items.map(\.id))
+        selectedIDs = Set(files.map(\.id))
     }
 
     func selectNone() {
@@ -140,7 +134,7 @@ final class MediaCaptureStore: ObservableObject {
 
     func selectOlderThan(days: Int) {
         let cutoff = Calendar.current.date(byAdding: .day, value: -days, to: Date()) ?? Date()
-        selectedIDs = Set(items.filter { $0.modified < cutoff }.map(\.id))
+        selectedIDs = Set(files.filter { $0.modified < cutoff }.map(\.id))
     }
 
     func requestDeleteSelected() {
@@ -154,26 +148,26 @@ final class MediaCaptureStore: ObservableObject {
 
     func deleteSelected(diskMonitor: DiskSpaceMonitor) {
         confirmDelete = false
-        let toDelete = selectedItems
-        guard !toDelete.isEmpty else { return }
+        let filesToDelete = selectedFiles
+        guard !filesToDelete.isEmpty else { return }
 
         isDeleting = true
-        statusMessage = "Deleting \(toDelete.count) items…"
+        statusMessage = "Deleting \(filesToDelete.count) items…"
 
         Task {
             var deleted = 0
             var failed = 0
             var freed: UInt64 = 0
 
-            for item in toDelete {
-                let ok = await Task.detached(priority: .userInitiated) {
-                    Self.forceRemove(item.url)
+            for file in filesToDelete {
+                let didDelete = await Task.detached(priority: .userInitiated) {
+                    Self.deleteFile(at: file.url)
                 }.value
-                if ok {
+                if didDelete {
                     deleted += 1
-                    freed += item.byteSize
-                    items.removeAll { $0.id == item.id }
-                    selectedIDs.remove(item.id)
+                    freed += file.byteSize
+                    files.removeAll { $0.id == file.id }
+                    selectedIDs.remove(file.id)
                 } else {
                     failed += 1
                 }
@@ -201,9 +195,9 @@ final class MediaCaptureStore: ObservableObject {
         }
     }
 
-    private nonisolated static func forceRemove(_ url: URL) -> Bool {
+    private nonisolated static func deleteFile(at url: URL) -> Bool {
         do {
-            try DeletePathGuard.validateForMediaDelete(url)
+            try DeletePathGuard.validateForReviewableFileDelete(url)
         } catch {
             return false
         }
