@@ -36,8 +36,6 @@ enum ReviewableFileKind: String, Equatable, Identifiable {
         rawValue
     }
 
-    /// Build artifacts carry the tool's own name in ``ReviewableFile/detailLabel`` ("Node
-    /// dependencies"); this is the fallback when a row has none.
     var label: String {
         switch self {
         case .screenshot: "Screenshot"
@@ -56,8 +54,6 @@ enum ReviewableFileKind: String, Equatable, Identifiable {
         }
     }
 
-    /// Folders are removed recursively and are re-created by a tool, so they take a different
-    /// delete guard from the single files the other kinds point at.
     var isDirectory: Bool {
         self == .buildArtifact
     }
@@ -132,8 +128,6 @@ enum ReviewableFileCategory: String, Equatable, CaseIterable {
         }
     }
 
-    /// What the confirmation adds under the byte count. Media and installers are gone for good;
-    /// build folders are gone until the next build.
     var deleteReassurance: String {
         switch self {
         case .screenshotsAndRecordings, .installerPackages:
@@ -143,7 +137,7 @@ enum ReviewableFileCategory: String, Equatable, CaseIterable {
         }
     }
 
-    /// Shares the cleanup targets' exclusion list, so one Settings section switches off any scan.
+    /// Namespaced because it shares `excludedTargetIDs` with the cleanup targets.
     var settingsID: String {
         "review-\(rawValue)"
     }
@@ -155,12 +149,8 @@ struct ReviewableFile: Identifiable, Equatable, Hashable {
     let kind: ReviewableFileKind
     let byteSize: UInt64
     let modified: Date
-    /// Folder names like `build` and `node_modules` repeat across every project, so a build
-    /// artifact row leads with the project that owns it.
     var projectName: String?
-    /// What the tool calls this folder — "Node dependencies" rather than the kind's generic label.
     var detailLabel: String?
-    /// What puts the folder back, shown so the choice to delete is an informed one.
     var regenerationNote: String?
 
     var name: String {
@@ -174,6 +164,11 @@ struct ReviewableFile: Identifiable, Equatable, Hashable {
 
     var subtitleLabel: String {
         detailLabel ?? kind.label
+    }
+
+    var locationLabel: String? {
+        guard projectName != nil else { return nil }
+        return (url.deletingLastPathComponent().path as NSString).abbreviatingWithTildeInPath
     }
 
     var sizeLabel: String {

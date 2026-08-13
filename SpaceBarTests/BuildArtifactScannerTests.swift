@@ -29,14 +29,12 @@ final class BuildArtifactScannerTests: XCTestCase {
         XCTAssertEqual(artifact.displayName, "storefront / node_modules")
     }
 
-    /// A hand-made `build` folder with no project around it is somebody's own work, not output.
     func testIgnoresArtifactNameWithoutAProjectMarker() throws {
         try makeProject("notes", marker: "readme.txt", artifact: "build")
 
         XCTAssertTrue(BuildArtifactScanner.scan(roots: [root], minimumBytes: 0).isEmpty)
     }
 
-    /// Same folder name, different toolchain: the marker beside it decides what the row says.
     func testMarkerPicksBetweenRulesSharingADirectoryName() throws {
         try makeProject("engine", marker: "Cargo.toml", artifact: "target")
         try makeProject("service", marker: "pom.xml", artifact: "target")
@@ -48,7 +46,6 @@ final class BuildArtifactScannerTests: XCTestCase {
         XCTAssertEqual(labels["service"], "Maven build output")
     }
 
-    /// `venv` only counts when it actually holds a virtualenv.
     func testContentMarkerIsRequiredForVirtualenvs() throws {
         let project = try makeProject("forecast", marker: "requirements.txt", artifact: ".venv")
         XCTAssertTrue(BuildArtifactScanner.scan(roots: [root], minimumBytes: 0).isEmpty)
@@ -59,8 +56,6 @@ final class BuildArtifactScannerTests: XCTestCase {
         XCTAssertEqual(BuildArtifactScanner.scan(roots: [root], minimumBytes: 0).count, 1)
     }
 
-    /// Nested `node_modules` are inside the folder that already got offered, so listing them
-    /// separately would double-count the same bytes.
     func testDoesNotDescendIntoAMatchedArtifact() throws {
         let project = try makeProject("monorepo", marker: "package.json", artifact: "node_modules")
         let nested = project.appendingPathComponent("node_modules/left-pad", isDirectory: true)

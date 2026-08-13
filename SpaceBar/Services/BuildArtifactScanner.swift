@@ -1,18 +1,9 @@
 import Foundation
 
-/// Finds regenerable build and dependency folders inside the code you keep on disk.
-///
-/// The walk is deliberately shallow and stops at the first artifact it finds on a branch: there is
-/// no point descending into `node_modules` to find the `node_modules` inside it, and not descending
-/// is what keeps a full-home scan to seconds rather than minutes.
 enum BuildArtifactScanner {
-    /// Anything smaller is noise in a list meant for reclaiming space — a `__pycache__` holding
-    /// 40 KB costs more attention than it returns.
     static let minimumBytes: UInt64 = 10_000_000
-    /// Depth below each search root. Five levels reaches `~/Code/work/client/app/node_modules`.
     static let maximumDepth = 5
-    /// Sizing each folder costs a `du`, so the walk stops collecting once the list is long enough
-    /// to be worth reviewing.
+    /// Each candidate costs a `du`, so collection stops here rather than sizing the whole disk.
     static let maximumResults = 300
 
     private struct Candidate {
@@ -32,9 +23,6 @@ enum BuildArtifactScanner {
             .sorted { $0.byteSize > $1.byteSize }
     }
 
-    /// Every non-hidden folder in the home folder except the ones macOS owns. Code lives in
-    /// `~/Projects` for some people and `~/Documents/work` for others, so the roots are discovered
-    /// rather than guessed.
     static func searchRoots() -> [URL] {
         let home = FileManager.default.homeDirectoryForCurrentUser
         let skipped: Set = [
@@ -81,8 +69,7 @@ enum BuildArtifactScanner {
     private static func matchingRule(for url: URL, siblingNames: Set<String>) -> BuildArtifactRule? {
         let rules = BuildArtifactRule.rule(forDirectoryNamed: url.lastPathComponent)
         guard !rules.isEmpty else { return nil }
-        // Listing the folder is only needed by rules that look inside it (a virtualenv's
-        // pyvenv.cfg), and listing something like node_modules is not free.
+        // Only content-marker rules need this, and listing node_modules is not free.
         var contents: Set<String>?
         let contentNames = {
             if let contents {
@@ -110,8 +97,7 @@ enum BuildArtifactScanner {
         return values.isDirectory == true && values.isSymbolicLink != true
     }
 
-    /// Bundles look like folders and never hold projects; hidden folders are skipped unless a rule
-    /// already claimed them above, so `.git` and `.vscode` cost nothing.
+    /// Hidden folders are only skipped here — a rule matching one has already claimed it above.
     private static func isSkippedBranch(_ url: URL) -> Bool {
         let name = url.lastPathComponent
         if name.hasPrefix(".") {

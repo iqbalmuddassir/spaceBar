@@ -1,21 +1,11 @@
 import Foundation
 
-/// One kind of regenerable folder a project leaves behind.
-///
-/// Folder names alone are ambiguous — plenty of people keep a `build` or `dist` folder that is
-/// hand-made and precious. A rule therefore also names the file that proves a real project owns
-/// the folder (`package.json` next to `node_modules`, `Cargo.toml` next to `target`), so the scan
-/// only offers folders a tool can put back.
 struct BuildArtifactRule: Equatable {
-    /// Folder to match, compared case-insensitively.
     let directoryName: String
-    /// One of these must sit beside the folder for it to count. Empty means the name is proof enough.
+    /// Empty means the folder name alone qualifies it.
     let siblingMarkers: [String]
-    /// One of these must sit inside the folder itself. Empty means no such requirement.
     let contentMarkers: [String]
-    /// What the row calls it — "Node dependencies" reads better than "node_modules".
     let label: String
-    /// What brings it back, so the panel can say why removing it is safe.
     let regenerationNote: String
 
     init(
@@ -32,7 +22,6 @@ struct BuildArtifactRule: Equatable {
         self.regenerationNote = regenerationNote
     }
 
-    /// Markers may be exact names (`Cargo.toml`) or a suffix wildcard (`*.xcodeproj`).
     static func marker(_ marker: String, matchesAnyOf names: Set<String>) -> Bool {
         if marker.hasPrefix("*") {
             let suffix = marker.dropFirst().lowercased()
@@ -58,8 +47,7 @@ struct BuildArtifactRule: Equatable {
 }
 
 extension BuildArtifactRule {
-    /// Ordered: the first rule whose markers match wins, so `target` beside `Cargo.toml` reads as
-    /// Rust output while `target` beside `pom.xml` reads as Maven output.
+    /// Order matters: the first rule whose markers match wins.
     static let all: [BuildArtifactRule] = javaScriptRules + appleRules + jvmRules + systemsRules + scriptingRules
 
     private static let javaScriptRules: [BuildArtifactRule] = [
@@ -307,8 +295,6 @@ extension BuildArtifactRule {
         )
     ]
 
-    /// The delete guard checks names against this rather than trusting whatever the UI hands it,
-    /// so a stale row can never remove a folder the scanner would not have offered.
     static let knownDirectoryNames: Set<String> = Set(all.map { $0.directoryName.lowercased() })
 
     static func rule(forDirectoryNamed name: String) -> [BuildArtifactRule] {

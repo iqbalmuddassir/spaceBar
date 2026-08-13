@@ -298,8 +298,7 @@ final class PanelSnapshotTests: XCTestCase {
         settings: AppSettings? = nil
     ) -> NSView {
         let settings = settings ?? SnapshotFixtures.settings()
-        // Opening the panel normally kicks off a real scan of this machine, which would replace the
-        // fixture rows with whatever the recording host happens to have on disk.
+        // Otherwise a real scan of the recording host replaces the fixture rows mid-snapshot.
         settings.rescanOnOpen = false
         let monitor = SnapshotFixtures.diskMonitor(for: freeSpaceCase, settings: settings)
         let store = SnapshotFixtures.cleanupStore()

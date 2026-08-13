@@ -2,8 +2,6 @@ import Foundation
 
 enum ReviewableFileScanner {
     static func scan(category: ReviewableFileCategory) -> [ReviewableFile] {
-        // Build files are folders found by walking projects, not files matched by name in a
-        // handful of known directories, so that scan is its own thing.
         if category == .projectBuildFiles {
             return BuildArtifactScanner.scan()
         }
