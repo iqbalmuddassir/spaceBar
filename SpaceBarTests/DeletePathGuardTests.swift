@@ -1,8 +1,6 @@
 import XCTest
 @testable import SpaceBar
 
-/// The guard is the last thing standing between a stale row and somebody's source tree, so it is
-/// tested against the paths a bug would most plausibly hand it.
 final class DeletePathGuardTests: XCTestCase {
     private var home: URL!
     private var project: URL!

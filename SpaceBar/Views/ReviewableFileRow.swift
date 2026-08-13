@@ -45,16 +45,17 @@ struct ReviewableFileRow: View {
     }
 
     private var accessibilityLabel: String {
-        "\(file.displayName), \(file.subtitleLabel), \(file.sizeLabel), \(file.relativeAgeLabel)"
+        var parts = [file.displayName, file.subtitleLabel, file.sizeLabel, file.relativeAgeLabel]
+        if let location = file.locationLabel {
+            parts.append("in \(location)")
+        }
+        return parts.joined(separator: ", ")
     }
 
-    /// The tooltip carries what the row has no room for: where the folder is and what puts it back.
     private var helpText: String {
-        var lines = [file.url.path]
-        if let note = file.regenerationNote {
-            lines.append(note)
-        }
-        return lines.joined(separator: "\n")
+        [file.url.path, file.regenerationNote]
+            .compactMap { $0 }
+            .joined(separator: "\n")
     }
 
     private var backgroundTint: Color {
@@ -92,6 +93,14 @@ struct ReviewableFileRow: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
+
+                if let location = file.locationLabel {
+                    Text(location)
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                        .lineLimit(1)
+                        .truncationMode(.head)
+                }
             }
 
             Spacer(minLength: 8)

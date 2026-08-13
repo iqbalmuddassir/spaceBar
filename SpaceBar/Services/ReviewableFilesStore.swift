@@ -126,7 +126,6 @@ final class ReviewableFilesStore: ObservableObject {
         showBrowser = false
     }
 
-    /// Switched off in Settings: drop what the last scan found so the panel stops counting it.
     func clearForExclusion() {
         scanTask?.cancel()
         scanGeneration += 1

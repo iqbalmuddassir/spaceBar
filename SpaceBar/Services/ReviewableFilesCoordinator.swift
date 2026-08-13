@@ -5,8 +5,6 @@ import Foundation
 final class ReviewableFilesCoordinator: ObservableObject {
     let stores: [ReviewableFilesStore]
 
-    /// Categories switched off in Settings, sharing the cleanup targets' exclusion list. Skipped
-    /// before the scan, so unticking the project walk actually makes opening the panel faster.
     @Published var excludedIDs: Set<String> = [] {
         didSet {
             for store in stores where excludedIDs.contains(store.category.settingsID) {
@@ -26,7 +24,6 @@ final class ReviewableFilesCoordinator: ObservableObject {
         }
     }
 
-    /// The categories the panel lists and scans — everything except what Settings switched off.
     var activeStores: [ReviewableFilesStore] {
         stores.filter { !excludedIDs.contains($0.category.settingsID) }
     }
