@@ -33,14 +33,28 @@ struct ReviewableFileRow: View {
         }
         .contentShape(Self.rowShape)
         .onHover { isHovering = $0 }
+        .help(helpText)
         .animation(.spring(response: 0.28, dampingFraction: 0.85), value: isSelected)
         .animation(.easeOut(duration: 0.12), value: isHovering)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(file.name), \(file.kind.label), \(file.sizeLabel), \(file.relativeAgeLabel)")
+        .accessibilityLabel(accessibilityLabel)
         .accessibilityValue(isSelected ? "Marked for deletion" : "Kept")
         .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
         .accessibilityHint("Toggles whether this file is deleted")
         .accessibilityAction(named: "Reveal in Finder", onReveal)
+    }
+
+    private var accessibilityLabel: String {
+        "\(file.displayName), \(file.subtitleLabel), \(file.sizeLabel), \(file.relativeAgeLabel)"
+    }
+
+    /// The tooltip carries what the row has no room for: where the folder is and what puts it back.
+    private var helpText: String {
+        var lines = [file.url.path]
+        if let note = file.regenerationNote {
+            lines.append(note)
+        }
+        return lines.joined(separator: "\n")
     }
 
     private var backgroundTint: Color {
@@ -66,12 +80,12 @@ struct ReviewableFileRow: View {
                 )
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(file.name)
+                Text(file.displayName)
                     .font(.system(.body, weight: .medium))
                     .lineLimit(1)
                     .truncationMode(.middle)
                 HStack(spacing: 6) {
-                    Text(file.kind.label)
+                    Text(file.subtitleLabel)
                     Text("·")
                     Text(file.relativeAgeLabel)
                 }
@@ -145,6 +159,7 @@ private struct ReviewableFileThumbnail: View {
         case .recording: "video.fill"
         case .installer: "shippingbox.fill"
         case .screenshot: "photo"
+        case .buildArtifact: "folder.fill.badge.gearshape"
         }
     }
 }

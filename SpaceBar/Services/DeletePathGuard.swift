@@ -105,6 +105,42 @@ enum DeletePathGuard {
         }
     }
 
+    /// Build artifacts are the one place SpaceBar removes a whole folder tree the user owns, so the
+    /// guard re-derives the decision from the path instead of trusting the row: it has to be a real
+    /// folder, inside the home folder but outside `~/Library`, at least two levels down, and named
+    /// something a scanner rule would have matched.
+    static func validateForBuildArtifactDelete(_ url: URL) throws {
+        if isForbiddenRoot(url) {
+            throw Refusal.forbiddenRoot
+        }
+        guard isUnderHome(url) else {
+            throw Refusal.outsideHome
+        }
+
+        let standardized = url.standardizedFileURL
+        let path = standardized.path
+        guard !path.hasPrefix(homePath + "/Library/") else {
+            throw Refusal.notAllowlisted
+        }
+        guard BuildArtifactRule.knownDirectoryNames.contains(standardized.lastPathComponent.lowercased()) else {
+            throw Refusal.notAllowlisted
+        }
+        // A project's artifact folder always sits inside a project folder, never straight in home.
+        let depthBelowHome = path.dropFirst(homePath.count).split(separator: "/").count
+        guard depthBelowHome >= 2 else {
+            throw Refusal.notAllowlisted
+        }
+
+        var isDir: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: path, isDirectory: &isDir), isDir.boolValue else {
+            throw Refusal.notAllowlisted
+        }
+        let isSymlink = (try? standardized.resourceValues(forKeys: [.isSymbolicLinkKey]))?.isSymbolicLink
+        guard isSymlink != true else {
+            throw Refusal.notAllowlisted
+        }
+    }
+
     static func constrainedToolCacheURL(_ url: URL, requiredPathFragment: String?) -> URL? {
         let standardized = url.standardizedFileURL
         guard isUnderHome(standardized), !isForbiddenRoot(standardized) else { return nil }

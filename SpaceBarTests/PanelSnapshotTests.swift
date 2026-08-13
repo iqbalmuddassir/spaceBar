@@ -67,6 +67,26 @@ final class PanelSnapshotTests: XCTestCase {
         )
     }
 
+    func testBuildFilesBrowser_macOS14() {
+        assertReviewBrowser(
+            for: .projectBuildFiles,
+            glass: false,
+            named: "build-files-browser-macos14",
+            exportDocsAs: "spacebar-build-files-browser",
+            testName: #function
+        )
+    }
+
+    func testBuildFilesBrowser_macOS26() throws {
+        try requireLiquidGlassHost()
+        assertReviewBrowser(
+            for: .projectBuildFiles,
+            glass: true,
+            named: "build-files-browser-macos26",
+            testName: #function
+        )
+    }
+
     func testCleanupPanelGood_macOS26() throws {
         try requireLiquidGlassHost()
         assertCleanupPanel(
@@ -278,6 +298,9 @@ final class PanelSnapshotTests: XCTestCase {
         settings: AppSettings? = nil
     ) -> NSView {
         let settings = settings ?? SnapshotFixtures.settings()
+        // Opening the panel normally kicks off a real scan of this machine, which would replace the
+        // fixture rows with whatever the recording host happens to have on disk.
+        settings.rescanOnOpen = false
         let monitor = SnapshotFixtures.diskMonitor(for: freeSpaceCase, settings: settings)
         let store = SnapshotFixtures.cleanupStore()
         let reviewCoordinator = SnapshotFixtures.reviewCoordinator()

@@ -31,8 +31,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             settings: settings
         )
         cleanupStore.excludedTargetIDs = settings.excludedTargetIDs
+        reviewCoordinator.excludedIDs = settings.excludedTargetIDs
         settingsObserver = settings.$excludedTargetIDs.sink { [weak self] excluded in
             self?.cleanupStore.excludedTargetIDs = excluded
+            self?.reviewCoordinator.excludedIDs = excluded
         }
         cleanupStore.startInitialScan()
         reviewCoordinator.scanAll()

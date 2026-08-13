@@ -5,6 +5,16 @@ import Foundation
 final class ReviewableFilesCoordinator: ObservableObject {
     let stores: [ReviewableFilesStore]
 
+    /// Categories switched off in Settings, sharing the cleanup targets' exclusion list. Skipped
+    /// before the scan, so unticking the project walk actually makes opening the panel faster.
+    @Published var excludedIDs: Set<String> = [] {
+        didSet {
+            for store in stores where excludedIDs.contains(store.category.settingsID) {
+                store.clearForExclusion()
+            }
+        }
+    }
+
     private var cancellables = Set<AnyCancellable>()
 
     init(categories: [ReviewableFileCategory] = ReviewableFileCategory.allCases) {
@@ -16,12 +26,17 @@ final class ReviewableFilesCoordinator: ObservableObject {
         }
     }
 
+    /// The categories the panel lists and scans — everything except what Settings switched off.
+    var activeStores: [ReviewableFilesStore] {
+        stores.filter { !excludedIDs.contains($0.category.settingsID) }
+    }
+
     var activeBrowserStore: ReviewableFilesStore? {
         stores.first { $0.showBrowser }
     }
 
     var totalReclaimableBytes: UInt64 {
-        stores.reduce(0) { $0 + $1.totalBytes }
+        activeStores.reduce(0) { $0 + $1.totalBytes }
     }
 
     var totalReclaimableLabel: String {
@@ -37,7 +52,7 @@ final class ReviewableFilesCoordinator: ObservableObject {
     }
 
     func scanAll() {
-        stores.forEach { $0.scan() }
+        activeStores.forEach { $0.scan() }
     }
 
     func closeAllBrowsers() {

@@ -34,6 +34,7 @@ Developer machines fill up with regenerable junk: Xcode DerivedData, package cac
 - Empties Trash via Finder when you choose Empty Trash (never pre-selected — it is the one irreversible target)
 - Lets you review screenshots and screen recordings as one item, select what to delete, and keep the rest
 - Lets you review downloaded installer packages (`.dmg`, `.pkg`, `.iso`) as a separate item, select what to delete, and keep the rest
+- Finds the build and dependency folders your projects leave behind — `node_modules`, `target`, `build`, `Pods`, `.venv`, `.gradle` and friends — names the project each one belongs to, and lets you delete them folder by folder
 
 ### Choosing a layout
 
@@ -45,6 +46,41 @@ header above them changes, so the choice is about how much room the overview get
 | **Gauge** (default) | Capacity meter with recoverable space as the headline | You want the summary and the rows both visible |
 | **Ledger** | A single thin bar | You want as many rows on screen as possible |
 | **Map** | Treemap where area is bytes and color is recency | You want to see at a glance what is eating the disk |
+
+### Project build files
+
+Caches in `~/Library` are only half the story: the other half is the build output sitting inside
+the projects themselves. SpaceBar walks the folders in your home directory (skipping the ones macOS
+owns — Library, Pictures, Movies, Music, Applications) up to five levels deep and offers the
+regenerable folders it finds.
+
+A folder name alone is never enough — plenty of people keep a `build` or `dist` folder that is
+hand-made and precious. Each folder has to sit beside the file that proves a tool owns it:
+
+| Folder | Proof it is regenerable | Reads as |
+| --- | --- | --- |
+| `node_modules`, `dist`, `.next`, `.turbo`, `coverage` | `package.json` | Node dependencies, bundler output, framework caches |
+| `target` | `Cargo.toml` or `pom.xml` | Rust or Maven build output |
+| `build`, `.gradle`, `.cxx` | `build.gradle`(`.kts`), `settings.gradle` | Gradle build output |
+| `build`, `.dart_tool` | `pubspec.yaml` | Flutter build output |
+| `build`, `cmake-build-*` | `CMakeLists.txt`, `Makefile`, `meson.build` | Build output |
+| `Pods`, `Carthage`, `.build`, `DerivedData` | `Podfile`, `Cartfile`, `Package.swift`, `*.xcodeproj` | Apple toolchain output |
+| `bin`, `obj` | `*.csproj`, `*.sln` | .NET build output |
+| `vendor` | `composer.json`, `Gemfile`, `go.mod` | Vendored dependencies |
+| `.venv`, `venv` | a `pyvenv.cfg` inside | Python virtualenv |
+| `__pycache__`, `.pytest_cache`, `.mypy_cache`, `.ruff_cache`, `.tox`, `.terraform`, `_build`, `deps`, `elm-stuff` | the tool's own project file where the name is ambiguous | Caches and fetched dependencies |
+
+Once a folder matches, the walk stops there — the `node_modules` inside a `node_modules` is already
+counted by its parent. Anything under 10 MB is left out; it costs more attention than it returns.
+
+Each row names the project first (`storefront / node_modules`), then what the folder is, then how
+long since anything in it changed. Hovering shows the full path and what puts the folder back
+(`npm install`, `cargo build`, `pod install`). Nothing is pre-ticked, and the delete guard re-checks
+every path before removing it: inside your home folder, outside `~/Library`, at least two levels
+down, a real folder rather than a symlink, and named something a rule would have matched.
+
+This is the most expensive scan SpaceBar does — a few seconds on a machine full of projects. Untick
+**Project Build Files** in Settings → Scanning if you would rather not pay it.
 
 Map needs at least 3 items to draw — one or two tiles say less than a bar does. Below that it
 shows Gauge and says why, rather than silently ignoring your choice. There is no minimum size:
@@ -104,7 +140,7 @@ SpaceBar runs as a menu-bar-only app (no Dock icon). Click the pill to open the 
 
 On open it scans cleanup targets under your home folder (and process temp), measures reclaimable size, and shows only targets that have something to free. Cleaning uses a path allowlist so deletes stay limited to approved cache locations. Sensitive targets ask for a stronger confirmation.
 
-Screenshots and recordings are found by common macOS filenames (`Screenshot…`, `Screen Recording…`) in Desktop, Pictures, Movies, Downloads, and your custom screencapture folder if it is under your home directory. Downloaded installer packages (`.dmg`, `.pkg`, `.iso`) are found in Downloads and Desktop and shown as their own item. Both are review lists: you pick what to remove, and nothing is deleted until you confirm.
+Screenshots and recordings are found by common macOS filenames (`Screenshot…`, `Screen Recording…`) in Desktop, Pictures, Movies, Downloads, and your custom screencapture folder if it is under your home directory. Downloaded installer packages (`.dmg`, `.pkg`, `.iso`) are found in Downloads and Desktop and shown as their own item. Project build files are found by walking your home folder for projects and matching regenerable folders against the file that proves a tool owns them. All three are review lists: you pick what to remove, and nothing is deleted until you confirm.
 
 Some folders need Full Disk Access. Emptying Trash may need Automation access to Finder.
 
@@ -117,8 +153,8 @@ Some folders need Full Disk Access. Emptying Trash may need Automation access to
 4. Adjust the ticks. Rows touched recently are left off deliberately — the age line tells you what
    cleaning one would cost ("forces a full rebuild", "will re-download").
 5. Press **Clean selected**, read the list in the confirmation, then confirm to delete permanently.
-6. For screenshots, recordings and installers, open the row to review individual files before
-   deleting.
+6. For screenshots, recordings, installers and project build files, open the row to review
+   individual items before deleting.
 7. Use the refresh control to rescan sizes and free space after cleaning.
 
 Quit from the panel footer when you are done, or leave it running for a live free-space meter.
@@ -147,6 +183,7 @@ Debug builds are tied to the built binary path. After rebuilding, toggle access 
 | Trash | Empty Trash |
 | Media | Screenshots and screen recordings (review before delete) |
 | Installers | Downloaded installer packages — `.dmg`, `.pkg`, `.iso` (review before delete) |
+| Project build files | `node_modules`, `target`, `build`, `Pods`, `.venv`, `.gradle` and friends, found inside your own projects (review before delete) |
 
 Caches are regenerable; the next build or install may take longer. Archives, AVDs, and Trash are treated as higher risk and use stronger confirmation.
 
