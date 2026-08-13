@@ -165,7 +165,7 @@ struct CleanupPopoverView: View {
     private var content: some View {
         let cleanupItems = store.results.filter { !$0.target.isPermanent }
         let trashItems = store.results.filter(\.target.isPermanent)
-        let reviewStores = reviewCoordinator.stores
+        let reviewStores = reviewCoordinator.activeStores
 
         if store.isScanning, store.results.isEmpty, reviewCoordinator.totalReclaimableBytes == 0 {
             VStack(spacing: 12) {

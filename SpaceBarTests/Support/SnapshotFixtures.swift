@@ -78,6 +78,7 @@ enum SnapshotFixtures {
         switch category {
         case .screenshotsAndRecordings: sampleCaptureFiles()
         case .installerPackages: sampleInstallerFiles()
+        case .projectBuildFiles: sampleBuildArtifacts()
         }
     }
 
@@ -175,6 +176,66 @@ enum SnapshotFixtures {
                 modified: modified
             )
         ]
+    }
+
+    private static func sampleBuildArtifacts() -> [ReviewableFile] {
+        let projects = FileManager.default.homeDirectoryForCurrentUser
+            .appendingPathComponent("Projects", isDirectory: true)
+        let modified = Calendar.current.date(from: DateComponents(year: 2026, month: 5, day: 20))!
+        return [
+            buildArtifact(
+                projects.appendingPathComponent("storefront/node_modules"),
+                project: "storefront",
+                label: "Node dependencies",
+                note: "npm install (or yarn/pnpm install) puts it back.",
+                bytes: 1_240_000_000,
+                modified: modified
+            ),
+            buildArtifact(
+                projects.appendingPathComponent("ledger-cli/target"),
+                project: "ledger-cli",
+                label: "Rust build output",
+                note: "cargo build regenerates it.",
+                bytes: 840_000_000,
+                modified: modified
+            ),
+            buildArtifact(
+                projects.appendingPathComponent("PhotoKit/Pods"),
+                project: "PhotoKit",
+                label: "CocoaPods dependencies",
+                note: "pod install puts them back.",
+                bytes: 310_000_000,
+                modified: modified
+            ),
+            buildArtifact(
+                projects.appendingPathComponent("forecast/.venv"),
+                project: "forecast",
+                label: "Python virtualenv",
+                note: "Recreate with python -m venv and pip install -r requirements.",
+                bytes: 96_000_000,
+                modified: modified
+            )
+        ]
+    }
+
+    private static func buildArtifact(
+        _ url: URL,
+        project: String,
+        label: String,
+        note: String,
+        bytes: UInt64,
+        modified: Date
+    ) -> ReviewableFile {
+        ReviewableFile(
+            id: url,
+            url: url,
+            kind: .buildArtifact,
+            byteSize: bytes,
+            modified: modified,
+            projectName: project,
+            detailLabel: label,
+            regenerationNote: note
+        )
     }
 
     /// Ages are offsets from "now" rather than absolute dates, so the rendered phrase

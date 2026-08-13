@@ -2,6 +2,12 @@ import Foundation
 
 enum ReviewableFileScanner {
     static func scan(category: ReviewableFileCategory) -> [ReviewableFile] {
+        // Build files are folders found by walking projects, not files matched by name in a
+        // handful of known directories, so that scan is its own thing.
+        if category == .projectBuildFiles {
+            return BuildArtifactScanner.scan()
+        }
+
         let allowedKinds = Set(category.kinds)
         var files: [ReviewableFile] = []
         var seenPaths = Set<String>()
@@ -36,6 +42,8 @@ enum ReviewableFileScanner {
                 home.appendingPathComponent("Downloads", isDirectory: true),
                 home.appendingPathComponent("Desktop", isDirectory: true)
             ]
+        case .projectBuildFiles:
+            directories = BuildArtifactScanner.searchRoots()
         }
 
         return existingUniqueDirectories(directories)

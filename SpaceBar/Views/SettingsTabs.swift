@@ -210,17 +210,24 @@ struct TargetExclusionList: View {
 
     var body: some View {
         LazyVGrid(columns: [GridItem(.adaptive(minimum: 160), spacing: 6)], alignment: .leading, spacing: 6) {
+            ForEach(ReviewableFileCategory.allCases, id: \.self) { category in
+                toggle(name: category.title, id: category.settingsID)
+            }
             ForEach(targets) { target in
-                Toggle(
-                    target.name,
-                    isOn: Binding(
-                        get: { !settings.isExcluded(targetID: target.id) },
-                        set: { settings.setExcluded(!$0, targetID: target.id) }
-                    )
-                )
-                .font(.caption)
-                .lineLimit(1)
+                toggle(name: target.name, id: target.id)
             }
         }
+    }
+
+    private func toggle(name: String, id: String) -> some View {
+        Toggle(
+            name,
+            isOn: Binding(
+                get: { !settings.isExcluded(targetID: id) },
+                set: { settings.setExcluded(!$0, targetID: id) }
+            )
+        )
+        .font(.caption)
+        .lineLimit(1)
     }
 }

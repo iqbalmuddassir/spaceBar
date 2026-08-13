@@ -299,7 +299,7 @@ struct ReviewableFilesBrowserView: View {
                 title: store.selectedIDs.count == 1 ? "Delete 1 item?" : "Delete \(store.selectedIDs.count) items?",
                 message: "Frees \(store.selectedBytesLabel). Unchecked items are kept."
             ) {
-                Text("This cannot be undone.")
+                Text(store.category.deleteReassurance)
                     .font(.caption)
                     .foregroundStyle(.tertiary)
             } actions: {

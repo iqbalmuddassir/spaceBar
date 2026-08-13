@@ -126,6 +126,18 @@ final class ReviewableFilesStore: ObservableObject {
         showBrowser = false
     }
 
+    /// Switched off in Settings: drop what the last scan found so the panel stops counting it.
+    func clearForExclusion() {
+        scanTask?.cancel()
+        scanGeneration += 1
+        isScanning = false
+        files = []
+        selectedIDs = []
+        statusMessage = nil
+        showBrowser = false
+        confirmDelete = false
+    }
+
     func loadFixture(files: [ReviewableFile], statusMessage: String? = nil) {
         scanTask?.cancel()
         scanGeneration += 1
@@ -199,8 +211,9 @@ final class ReviewableFilesStore: ObservableObject {
             var freed: UInt64 = 0
 
             for file in filesToDelete {
+                let isDirectory = file.kind.isDirectory
                 let didDelete = await Task.detached(priority: .userInitiated) {
-                    Self.deleteFile(at: file.url)
+                    Self.deleteFile(at: file.url, isDirectory: isDirectory)
                 }.value
                 if didDelete {
                     deleted += 1
@@ -234,9 +247,13 @@ final class ReviewableFilesStore: ObservableObject {
         }
     }
 
-    private nonisolated static func deleteFile(at url: URL) -> Bool {
+    private nonisolated static func deleteFile(at url: URL, isDirectory: Bool) -> Bool {
         do {
-            try DeletePathGuard.validateForReviewableFileDelete(url)
+            if isDirectory {
+                try DeletePathGuard.validateForBuildArtifactDelete(url)
+            } else {
+                try DeletePathGuard.validateForReviewableFileDelete(url)
+            }
         } catch {
             return false
         }
@@ -247,7 +264,7 @@ final class ReviewableFilesStore: ObservableObject {
         } catch {
             let process = Process()
             process.executableURL = URL(fileURLWithPath: "/bin/rm")
-            process.arguments = ["-f", url.path]
+            process.arguments = [isDirectory ? "-rf" : "-f", url.path]
             process.standardOutput = Pipe()
             process.standardError = Pipe()
             do {
