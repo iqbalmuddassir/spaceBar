@@ -65,7 +65,28 @@ enum DeletePathGuard {
             home + "/Library/Caches/org.swift.swiftpm",
             home + "/Library/Caches/Homebrew",
             home + "/Library/Caches/pip",
-            home + "/.Trash"
+            home + "/.Trash",
+            home + "/Library/Application Support/Claude/Cache",
+            home + "/Library/Application Support/Claude/Code Cache",
+            home + "/Library/Application Support/Claude/GPUCache",
+            home + "/Library/Application Support/Claude/DawnWebGPUCache",
+            home + "/Library/Application Support/Claude/DawnGraphiteCache",
+            home + "/Library/Application Support/Cursor/Cache",
+            home + "/Library/Application Support/Cursor/Code Cache",
+            home + "/Library/Application Support/Cursor/GPUCache",
+            home + "/Library/Application Support/Cursor/DawnGraphiteCache",
+            home + "/Library/Application Support/Cursor/DawnWebGPUCache",
+            home + "/Library/Application Support/Cursor/CachedData",
+            home + "/Library/Application Support/Cursor/CachedExtensionVSIXs",
+            home + "/Library/Application Support/Cursor/CachedProfilesData",
+            home + "/Library/Application Support/Cursor/CachedConfigurations",
+            home + "/Library/Application Support/Windsurf/Cache",
+            home + "/Library/Application Support/Windsurf/Code Cache",
+            home + "/Library/Application Support/Windsurf/GPUCache",
+            home + "/Library/Application Support/Windsurf/CachedData",
+            home + "/Library/Application Support/Windsurf/CachedExtensionVSIXs",
+            home + "/.continue/cache",
+            home + "/.codex/cache"
         ]
         if prefixes.contains(where: { path == $0 || path.hasPrefix($0 + "/") }) {
             return true

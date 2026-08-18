@@ -18,6 +18,14 @@ extension CleanTargetRegistry {
         "pip": .downloaded,
         "simctl-unavailable": .booted,
         "android-avds": .booted,
-        "empty-trash": .trashed
+        "empty-trash": .trashed,
+        "claude-desktop-cache": .used,
+        "claude-code-cli-cache": .used,
+        "cursor-cache": .used,
+        "cursor-cached-data": .downloaded,
+        "windsurf-cache": .used,
+        "ollama-cache": .downloaded,
+        "continue-cache": .used,
+        "codex-cache": .used
     ]
 }

@@ -13,6 +13,7 @@ enum CleanTargetRegistry {
         targets.append(contentsOf: androidAndBuildTargets(home: home))
         targets.append(contentsOf: packageManagerTargets(home: home, caches: caches))
         targets.append(contentsOf: optionalToolTargets(home: home, caches: caches))
+        targets.append(contentsOf: agenticAITargets(home: home, caches: caches))
         targets.append(emptyTrashTarget())
         return targets.map { target in
             var copy = target
@@ -226,7 +227,7 @@ enum CleanTargetRegistry {
         )
     }
 
-    private static func tildePath(_ url: URL) -> String {
+    static func tildePath(_ url: URL) -> String {
         url.path.replacingOccurrences(of: FileManager.default.homeDirectoryForCurrentUser.path, with: "~")
     }
 
