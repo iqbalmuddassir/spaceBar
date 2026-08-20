@@ -205,11 +205,14 @@ final class CleanupStore: ObservableObject {
 
         let scanned = await scan(target: target)
         withAnimation(.snappy(duration: 0.3)) {
-            if let scanned, scanned.isVisible {
+            if var scannedResult = scanned, scannedResult.isVisible {
                 if let index = results.firstIndex(where: { $0.id == targetID }) {
-                    results[index] = scanned
+                    if scannedResult.errorMessage == nil {
+                        scannedResult.errorMessage = results[index].errorMessage
+                    }
+                    results[index] = scannedResult
                 } else {
-                    results.append(scanned)
+                    results.append(scannedResult)
                 }
                 let regular = results.filter { !$0.target.isPermanent }.sorted { $0.byteSize > $1.byteSize }
                 let trash = results.filter(\.target.isPermanent)
@@ -284,7 +287,13 @@ final class CleanupStore: ObservableObject {
                 let unit = failed == 1 ? "item" : "items"
                 setStatus("Freed \(freed) from \(target.name) · \(failed) \(unit) failed")
                 if let index = results.firstIndex(where: { $0.id == target.id }) {
-                    results[index].errorMessage = "\(failed) \(unit) could not be deleted"
+                    if !cleanResult.failedPaths.isEmpty {
+                        let uniqueNames = Array(Set(cleanResult.failedPaths)).sorted()
+                        let names = uniqueNames.joined(separator: ", ")
+                        results[index].errorMessage = "Locked or in use: \(names)"
+                    } else {
+                        results[index].errorMessage = "\(failed) \(unit) could not be deleted"
+                    }
                 }
             } else {
                 setStatus("Freed \(freed) from \(target.name)")
