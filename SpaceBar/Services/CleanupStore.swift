@@ -81,11 +81,11 @@ final class CleanupStore: ObservableObject {
 
     /// Deletes each selected target in turn, keeping the existing per-target guards and
     /// error handling rather than introducing a second delete path.
-    func performBatchClean(_ targets: [CleanTarget], diskMonitor: DiskSpaceMonitor) {
+    func performBatchClean(_ targets: [CleanTarget], diskMonitor: DiskSpaceMonitor, settings: AppSettings) {
         isBatchConfirming = false
         Task {
             for target in targets {
-                await performDelete(target, diskMonitor: diskMonitor)
+                await performDelete(target, diskMonitor: diskMonitor, settings: settings)
             }
             clearSelectionOverrides()
         }
@@ -232,12 +232,12 @@ final class CleanupStore: ObservableObject {
         }
     }
 
-    func confirmDelete(_ target: CleanTarget, diskMonitor: DiskSpaceMonitor) {
+    func confirmDelete(_ target: CleanTarget, diskMonitor: DiskSpaceMonitor, settings: AppSettings) {
         withAnimation(.snappy(duration: 0.2)) {
             pendingConfirmID = nil
         }
         Task {
-            await performDelete(target, diskMonitor: diskMonitor)
+            await performDelete(target, diskMonitor: diskMonitor, settings: settings)
         }
     }
 
@@ -252,7 +252,7 @@ final class CleanupStore: ObservableObject {
         }
     }
 
-    func performDelete(_ target: CleanTarget, diskMonitor: DiskSpaceMonitor) async {
+    func performDelete(_ target: CleanTarget, diskMonitor: DiskSpaceMonitor, settings: AppSettings) async {
         if let index = results.firstIndex(where: { $0.id == target.id }) {
             withAnimation(.easeInOut(duration: 0.15)) {
                 results[index].phase = .deleting
@@ -276,6 +276,7 @@ final class CleanupStore: ObservableObject {
                     }
                 }
             }
+            settings.addReclaimed(cleanResult.bytesFreed)
 
             let freed = ByteFormatting.string(from: cleanResult.bytesFreed)
             if cleanResult.failedEntries > 0 {

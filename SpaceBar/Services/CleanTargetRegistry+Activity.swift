@@ -26,6 +26,15 @@ extension CleanTargetRegistry {
         "windsurf-cache": .used,
         "ollama-cache": .downloaded,
         "continue-cache": .used,
-        "codex-cache": .used
+        "codex-cache": .used,
+        "cargo-registry": .downloaded,
+        "go-mod-cache": .downloaded,
+        "go-build-cache": .built,
+        "bun-cache": .downloaded,
+        "yarn-cache": .downloaded,
+        "node-gyp-cache": .downloaded,
+        "nix-eval-cache": .used,
+        "bazel-repo-cache": .downloaded,
+        "vscode-cache": .used
     ]
 }

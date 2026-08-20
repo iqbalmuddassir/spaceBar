@@ -86,7 +86,18 @@ enum DeletePathGuard {
             home + "/Library/Application Support/Windsurf/CachedData",
             home + "/Library/Application Support/Windsurf/CachedExtensionVSIXs",
             home + "/.continue/cache",
-            home + "/.codex/cache"
+            home + "/.codex/cache",
+            home + "/.cargo/registry",
+            home + "/go/pkg/mod",
+            home + "/.bun/install/cache",
+            home + "/.node-gyp",
+            home + "/Library/Caches/nix",
+            home + "/Library/Caches/bazel",
+            home + "/Library/Application Support/Code/Cache",
+            home + "/Library/Application Support/Code/Code Cache",
+            home + "/Library/Application Support/Code/GPUCache",
+            home + "/Library/Application Support/Code/CachedData",
+            home + "/Library/Application Support/Code/CachedExtensionVSIXs"
         ]
         if prefixes.contains(where: { path == $0 || path.hasPrefix($0 + "/") }) {
             return true

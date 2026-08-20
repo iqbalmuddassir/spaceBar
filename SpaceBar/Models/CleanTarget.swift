@@ -1,5 +1,27 @@
 import Foundation
 
+enum CleanTargetCategory: String, CaseIterable {
+    case general
+    case xcode
+    case mobile
+    case packageManagers
+    case devTools
+    case aiTools
+    case trash
+
+    var title: String {
+        switch self {
+        case .general: "General"
+        case .xcode: "Xcode"
+        case .mobile: "Mobile & Build Tools"
+        case .packageManagers: "Package Managers"
+        case .devTools: "Developer Tools"
+        case .aiTools: "AI Tools"
+        case .trash: "Trash"
+        }
+    }
+}
+
 enum CleanStrategy: Equatable {
     case deletePaths([URL])
     case emptyTrash
@@ -18,6 +40,7 @@ struct CleanTarget: Identifiable, Equatable {
     /// Names what actually happened to this target, so the row reads "Built 20 minutes ago"
     /// rather than the filesystem's "last modified".
     var activity: CleanupActivity = .used
+    var category: CleanTargetCategory = .general
 
     var confirmationTitle: String {
         isPermanent ? "Empty Trash permanently?" : "Delete permanently?"

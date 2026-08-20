@@ -73,7 +73,7 @@ struct CleanupPopoverView: View {
                 CleanupConfirmOverlay(
                     target: pending,
                     onCancel: { store.cancelConfirm() },
-                    onConfirm: { store.confirmDelete(pending, diskMonitor: diskMonitor) }
+                    onConfirm: { store.confirmDelete(pending, diskMonitor: diskMonitor, settings: settings) }
                 )
                 .transition(.opacity.combined(with: .scale(scale: 0.96)))
             }
@@ -86,7 +86,8 @@ struct CleanupPopoverView: View {
                     onConfirm: {
                         store.performBatchClean(
                             selectedResults.map(\.target),
-                            diskMonitor: diskMonitor
+                            diskMonitor: diskMonitor,
+                            settings: settings
                         )
                     }
                 )
@@ -161,9 +162,24 @@ struct CleanupPopoverView: View {
         PanelLayoutHeader()
     }
 
+    /// Fixed so the list reads the same every time, rather than reshuffling section order as
+    /// byte totals change between scans.
+    private static let categoryOrder: [CleanTargetCategory] = [
+        .general, .xcode, .mobile, .packageManagers, .devTools, .aiTools
+    ]
+
+    private var groupedCleanupItems: [(category: CleanTargetCategory, results: [TargetScanResult])] {
+        let cleanupItems = store.results.filter { !$0.target.isPermanent }
+        let byCategory = Dictionary(grouping: cleanupItems, by: \.target.category)
+        return Self.categoryOrder.compactMap { category in
+            guard let results = byCategory[category], !results.isEmpty else { return nil }
+            return (category, results.sorted { $0.byteSize > $1.byteSize })
+        }
+    }
+
     @ViewBuilder
     private var content: some View {
-        let cleanupItems = store.results.filter { !$0.target.isPermanent }
+        let groups = groupedCleanupItems
         let trashItems = store.results.filter(\.target.isPermanent)
         let reviewStores = reviewCoordinator.activeStores
 
@@ -180,25 +196,34 @@ struct CleanupPopoverView: View {
                 LazyVStack(alignment: .leading, spacing: 0) {
                     listHeader
 
-                    ForEach(Array(reviewStores.enumerated()), id: \.element.category) { index, reviewStore in
-                        ReviewableFilesSummaryRow(store: reviewStore)
-                        if index < reviewStores.count - 1 || !cleanupItems.isEmpty || !trashItems.isEmpty {
-                            Divider().padding(.leading, 16)
+                    if !reviewStores.isEmpty {
+                        sectionLabel("Review First")
+                        ForEach(Array(reviewStores.enumerated()), id: \.element.category) { index, reviewStore in
+                            ReviewableFilesSummaryRow(store: reviewStore)
+                            if index < reviewStores.count - 1 {
+                                Divider().padding(.leading, 16)
+                            }
                         }
                     }
 
-                    ForEach(Array(cleanupItems.enumerated()), id: \.element.id) { index, result in
-                        reclaimRow(for: result)
-                        if index < cleanupItems.count - 1 || !trashItems.isEmpty {
-                            Divider().padding(.leading, 16)
+                    ForEach(groups, id: \.category) { group in
+                        sectionLabel(group.category.title)
+                        ForEach(Array(group.results.enumerated()), id: \.element.id) { index, result in
+                            reclaimRow(for: result)
+                            if index < group.results.count - 1 {
+                                Divider().padding(.leading, 16)
+                            }
                         }
                     }
 
+                    if !groups.isEmpty, !trashItems.isEmpty {
+                        Divider().padding(.leading, 16)
+                    }
                     ForEach(trashItems) { result in
                         reclaimRow(for: result)
                     }
 
-                    if cleanupItems.isEmpty, trashItems.isEmpty, !store.isScanning {
+                    if groups.isEmpty, trashItems.isEmpty, !store.isScanning {
                         Text("No cache cleanup targets right now")
                             .font(.caption)
                             .foregroundStyle(.secondary)
