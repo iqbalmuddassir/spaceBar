@@ -131,6 +131,13 @@ enum CleanerService {
         ) { _, _ in }
     }
 
+    private enum ItemOutcome {
+        case deleted
+        case failedValidation(String)
+        case failedRemove(name: String, likelyFDA: Bool)
+        case failedListing(name: String)
+    }
+
     private static func deleteContents(of urls: [URL]) throws -> CleanResult {
         for url in urls {
             do {
@@ -143,56 +150,99 @@ enum CleanerService {
         let existing = urls.filter { FileManager.default.fileExists(atPath: $0.path) }
         let before = DirectorySizer.size(of: existing)
 
-        var deleted = 0
-        var failed = 0
-        var permissionFails = 0
-        var lastError: String?
-
-        for url in existing {
-            let items = expansionTargets(for: url)
-            if items.isEmpty {
-                failed += 1
-                permissionFails += 1
-                lastError = "Could not list \(url.lastPathComponent)"
-                continue
-            }
-            for item in items {
-                do {
-                    try DeletePathGuard.validateForCleanupDelete(item)
-                } catch {
-                    failed += 1
-                    lastError = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
-                    continue
-                }
-                if forceRemove(item) {
-                    deleted += 1
-                } else {
-                    failed += 1
-                    lastError = item.lastPathComponent
-                    let lacksWrite = !FileManager.default.isWritableFile(atPath: item.path)
-                    let likelyFDA = !hasFullDiskAccess() && item.path.contains("/Library/")
-                    if lacksWrite || likelyFDA {
-                        permissionFails += 1
-                    }
-                }
-            }
-        }
+        let tally = tally(deleteExpanded(existing))
 
         let after = DirectorySizer.size(of: urls.filter { FileManager.default.fileExists(atPath: $0.path) })
-        let result = CleanResult(bytesBefore: before, bytesAfter: after, deletedEntries: deleted, failedEntries: failed)
+        let result = CleanResult(
+            bytesBefore: before,
+            bytesAfter: after,
+            deletedEntries: tally.deleted,
+            failedEntries: tally.failed
+        )
 
-        if deleted == 0 {
-            if permissionFails > 0, !hasFullDiskAccess() {
+        if tally.deleted == 0 {
+            if tally.permissionFails > 0, !hasFullDiskAccess() {
                 throw CleanerError.permissionDenied
             }
-            throw CleanerError.nothingDeleted(lastError.map { "Could not delete \($0)" } ?? "Nothing was deleted.")
+            let message = tally.lastError.map { "Could not delete \($0)" } ?? "Nothing was deleted."
+            throw CleanerError.nothingDeleted(message)
         }
 
-        if result.bytesFreed == 0, failed > deleted {
+        if result.bytesFreed == 0, tally.failed > tally.deleted {
             throw CleanerError.nothingDeleted("Files are locked or protected. Quit related apps and try again.")
         }
 
         return result
+    }
+
+    /// App Caches expands to one item per app cache folder — deleting ~100 of those one at a
+    /// time is what makes a large cache read as hung, so items are removed concurrently instead.
+    private static func deleteExpanded(_ existing: [URL]) -> [ItemOutcome] {
+        var expanded: [URL] = []
+        var listingFailures: [ItemOutcome] = []
+        for url in existing {
+            let items = expansionTargets(for: url)
+            if items.isEmpty {
+                listingFailures.append(.failedListing(name: url.lastPathComponent))
+            } else {
+                expanded.append(contentsOf: items)
+            }
+        }
+
+        var outcomes = [ItemOutcome](repeating: .deleted, count: expanded.count)
+        outcomes.withUnsafeMutableBufferPointer { buffer in
+            DispatchQueue.concurrentPerform(iterations: expanded.count) { index in
+                buffer[index] = deleteOne(expanded[index])
+            }
+        }
+        return listingFailures + outcomes
+    }
+
+    private static func deleteOne(_ item: URL) -> ItemOutcome {
+        do {
+            try DeletePathGuard.validateForCleanupDelete(item)
+        } catch {
+            let message = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+            return .failedValidation(message)
+        }
+        if forceRemove(item) {
+            return .deleted
+        }
+        let lacksWrite = !FileManager.default.isWritableFile(atPath: item.path)
+        let likelyFDA = !hasFullDiskAccess() && item.path.contains("/Library/")
+        return .failedRemove(name: item.lastPathComponent, likelyFDA: lacksWrite || likelyFDA)
+    }
+
+    private struct Tally {
+        var deleted = 0
+        var failed = 0
+        var permissionFails = 0
+        var lastError: String?
+    }
+
+    private static func tally(_ outcomes: [ItemOutcome]) -> Tally {
+        var tally = Tally()
+
+        for outcome in outcomes {
+            switch outcome {
+            case .deleted:
+                tally.deleted += 1
+            case let .failedValidation(message):
+                tally.failed += 1
+                tally.lastError = message
+            case let .failedRemove(name, likelyFDA):
+                tally.failed += 1
+                tally.lastError = name
+                if likelyFDA {
+                    tally.permissionFails += 1
+                }
+            case let .failedListing(name):
+                tally.failed += 1
+                tally.permissionFails += 1
+                tally.lastError = "Could not list \(name)"
+            }
+        }
+        return tally
     }
 
     private static func expansionTargets(for url: URL) -> [URL] {

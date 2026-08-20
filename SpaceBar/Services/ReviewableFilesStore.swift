@@ -196,7 +196,7 @@ final class ReviewableFilesStore: ObservableObject {
         confirmDelete = false
     }
 
-    func deleteSelected(diskMonitor: DiskSpaceMonitor) {
+    func deleteSelected(diskMonitor: DiskSpaceMonitor, settings: AppSettings) {
         confirmDelete = false
         let filesToDelete = selectedFiles
         guard !filesToDelete.isEmpty else { return }
@@ -225,6 +225,7 @@ final class ReviewableFilesStore: ObservableObject {
             }
 
             isDeleting = false
+            settings.addReclaimed(freed)
             let freedLabel = ByteFormatting.string(from: freed)
             if failed == 0 {
                 setStatus("Deleted \(deleted) · freed \(freedLabel)")

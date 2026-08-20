@@ -4,6 +4,7 @@ import SwiftUI
 struct ReviewableFilesBrowserView: View {
     @ObservedObject var store: ReviewableFilesStore
     @EnvironmentObject private var diskMonitor: DiskSpaceMonitor
+    @EnvironmentObject private var settings: AppSettings
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.liquidGlassNamespace) private var glassNamespace
 
@@ -306,7 +307,7 @@ struct ReviewableFilesBrowserView: View {
                 DialogButton(title: "Cancel") { store.cancelDelete() }
                     .keyboardShortcut(.cancelAction)
                 DialogButton(title: "Delete", isDefault: true, tint: .red) {
-                    store.deleteSelected(diskMonitor: diskMonitor)
+                    store.deleteSelected(diskMonitor: diskMonitor, settings: settings)
                 }
                 .keyboardShortcut(.defaultAction)
             }

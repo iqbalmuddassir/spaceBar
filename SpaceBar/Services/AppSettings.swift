@@ -79,6 +79,7 @@ final class AppSettings: ObservableObject {
         static let showPercentageInPill = "showPercentageInPill"
         static let fullColorOnlyWhenCritical = "fullColorOnlyWhenCritical"
         static let excludedTargetIDs = "excludedTargetIDs"
+        static let lifetimeReclaimedBytes = "lifetimeReclaimedBytes"
     }
 
     enum Default {
@@ -131,6 +132,10 @@ final class AppSettings: ObservableObject {
         didSet { store(Array(excludedTargetIDs).sorted(), Key.excludedTargetIDs) }
     }
 
+    /// Every byte ever actually freed by SpaceBar, across every cleanup — a running counter that
+    /// only grows, so it stays meaningful even after the disk fills back up.
+    @Published private(set) var lifetimeReclaimedBytes: UInt64
+
     /// Kept ordered by ``clampThresholds()`` so critical can never rise above warning.
     @Published private(set) var warningFraction: Double
     @Published private(set) var criticalFraction: Double
@@ -155,6 +160,7 @@ final class AppSettings: ObservableObject {
             fallback: Default.fullColorOnlyWhenCritical
         )
         excludedTargetIDs = Set(defaults.stringArray(forKey: Key.excludedTargetIDs) ?? [])
+        lifetimeReclaimedBytes = UInt64(defaults.string(forKey: Key.lifetimeReclaimedBytes) ?? "") ?? 0
         clampThresholds()
     }
 
@@ -199,6 +205,13 @@ final class AppSettings: ObservableObject {
             return .warning
         }
         return .healthy
+    }
+
+    /// Zero is ignored so a no-op delete doesn't churn the store.
+    func addReclaimed(_ bytes: UInt64) {
+        guard bytes > 0 else { return }
+        lifetimeReclaimedBytes += bytes
+        store(String(lifetimeReclaimedBytes), Key.lifetimeReclaimedBytes)
     }
 
     func isExcluded(targetID: String) -> Bool {

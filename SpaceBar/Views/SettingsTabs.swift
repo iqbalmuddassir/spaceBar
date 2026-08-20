@@ -6,6 +6,22 @@ struct ThresholdSettingsTab: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
+            SettingsSection(title: "Lifetime") {
+                HStack(spacing: 10) {
+                    Image(systemName: "arrow.down.circle.fill")
+                        .font(.title2)
+                        .foregroundStyle(.green)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(ByteFormatting.string(from: settings.lifetimeReclaimedBytes))
+                            .font(.headline.monospacedDigit())
+                        Text("Reclaimed since you started using SpaceBar")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                }
+            }
+
             SettingsSection(title: "When to warn you") {
                 ThresholdZoneBar(
                     warningFraction: settings.warningFraction,

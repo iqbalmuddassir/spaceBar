@@ -1,8 +1,21 @@
 import Foundation
 
 enum DirectorySizer {
+    /// Sizes every URL concurrently rather than one `du` process at a time — serially, a target
+    /// with 100+ children (App Caches being the extreme case) can take minutes.
     static func size(of urls: [URL]) -> UInt64 {
-        urls.reduce(into: UInt64(0)) { $0 += size(of: $1) }
+        guard !urls.isEmpty else { return 0 }
+        if urls.count == 1 {
+            return size(of: urls[0])
+        }
+
+        var totals = [UInt64](repeating: 0, count: urls.count)
+        totals.withUnsafeMutableBufferPointer { buffer in
+            DispatchQueue.concurrentPerform(iterations: urls.count) { index in
+                buffer[index] = size(of: urls[index])
+            }
+        }
+        return totals.reduce(0, +)
     }
 
     static func size(of url: URL) -> UInt64 {
