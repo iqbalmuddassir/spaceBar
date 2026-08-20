@@ -1,193 +1,45 @@
 # SpaceBar
 
-SpaceBar is a macOS menu bar app for reclaiming disk space without digging through Finder.
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-Developer machines fill up with regenerable junk: Xcode DerivedData, package caches, simulators, Docker build cache, temp files, and piles of screenshots. Trash does not free space until you empty it. SpaceBar makes that reclaimable space visible and removable from one panel.
+SpaceBar is an open source macOS menu bar app for reclaiming disk space without digging through Finder.
+
+Developer machines fill up with regenerable junk: Xcode DerivedData, package caches, simulators, Docker build cache, temp files, and piles of screenshots. SpaceBar makes that reclaimable space visible and removable from one panel.
 
 <p align="center">
   <img src="Docs/spacebar-panel.png" alt="SpaceBar panel showing free space, reclaimable caches, and cleanup actions" width="420" />
 </p>
 
-<p align="center">
-  <img src="Docs/spacebar-pill-good.png" alt="Menu bar pill with plenty of free space" height="22" />
-  &nbsp;
-  <img src="Docs/spacebar-pill-low.png" alt="Menu bar pill when space is running low" height="22" />
-  &nbsp;
-  <img src="Docs/spacebar-pill-critical.png" alt="Menu bar pill when space is critically low" height="22" />
-</p>
+## What is SpaceBar
 
-<p align="center">
-  <img src="Docs/spacebar-panel-good.png" alt="SpaceBar panel — plenty of space" width="200" />
-  <img src="Docs/spacebar-panel-low.png" alt="SpaceBar panel — running low" width="200" />
-  <img src="Docs/spacebar-panel-critical.png" alt="SpaceBar panel — critically low" width="200" />
-</p>
-
-**Copyright © 2026 Muddassir Iqbal**
-
-## What it does
-
-- Shows free disk space in the menu bar as a colored pill (green when plenty is free, orange under 20%, red under 10% — both thresholds configurable)
+- Shows free disk space in the menu bar as a colored pill (green/orange/red, thresholds configurable)
 - Scans known cache and cleanup locations and lists how much each can free, sorted by payoff
-- Tells you how long ago each target was actually touched, in its own words — "Built 20 minutes ago", "Downloaded 40 days ago", "Newest item trashed 2 weeks ago"
+- Tells you how long ago each target was actually touched — "Built 20 minutes ago", "Downloaded 40 days ago"
 - Pre-selects only what is old enough to be safe, and says why anything was held back
 - Reclaims everything you ticked in one press, after a confirmation that lists exactly what goes
-- Empties Trash via Finder when you choose Empty Trash (never pre-selected — it is the one irreversible target)
-- Lets you review screenshots and screen recordings as one item, select what to delete, and keep the rest
-- Lets you review downloaded installer packages (`.dmg`, `.pkg`, `.iso`) as a separate item, select what to delete, and keep the rest
-- Finds the build and dependency folders your projects leave behind — `node_modules`, `target`, `build`, `Pods`, `.venv`, `.gradle` and friends — names the project each one belongs to, and lets you delete them folder by folder
+- Lets you review screenshots/recordings, downloaded installers (`.dmg`, `.pkg`, `.iso`), and project build folders (`node_modules`, `target`, `Pods`, `.venv`, etc.) item by item before deleting
+- Offers three panel layouts — Gauge (capacity meter), Ledger (compact list), Map (treemap by size/recency)
 
-### Choosing a layout
-
-The panel's list, selection and cleanup button are the same whichever layout you pick — only the
-header above them changes, so the choice is about how much room the overview gets:
-
-| Layout | Header | Best when |
-| --- | --- | --- |
-| **Gauge** (default) | Capacity meter with recoverable space as the headline | You want the summary and the rows both visible |
-| **Ledger** | A single thin bar | You want as many rows on screen as possible |
-| **Map** | Treemap where area is bytes and color is recency | You want to see at a glance what is eating the disk |
-
-### Project build files
-
-Caches in `~/Library` are only half the story: the other half is the build output sitting inside
-the projects themselves. SpaceBar walks the folders in your home directory (skipping the ones macOS
-owns — Library, Pictures, Movies, Music, Applications) up to five levels deep and offers the
-regenerable folders it finds.
-
-A folder name alone is never enough — plenty of people keep a `build` or `dist` folder that is
-hand-made and precious. Each folder has to sit beside the file that proves a tool owns it:
-
-| Folder | Proof it is regenerable | Reads as |
-| --- | --- | --- |
-| `node_modules`, `dist`, `.next`, `.turbo`, `coverage` | `package.json` | Node dependencies, bundler output, framework caches |
-| `target` | `Cargo.toml` or `pom.xml` | Rust or Maven build output |
-| `build`, `.gradle`, `.cxx` | `build.gradle`(`.kts`), `settings.gradle` | Gradle build output |
-| `build`, `.dart_tool` | `pubspec.yaml` | Flutter build output |
-| `build`, `cmake-build-*` | `CMakeLists.txt`, `Makefile`, `meson.build` | Build output |
-| `Pods`, `Carthage`, `.build`, `DerivedData` | `Podfile`, `Cartfile`, `Package.swift`, `*.xcodeproj` | Apple toolchain output |
-| `bin`, `obj` | `*.csproj`, `*.sln` | .NET build output |
-| `vendor` | `composer.json`, `Gemfile`, `go.mod` | Vendored dependencies |
-| `.venv`, `venv` | a `pyvenv.cfg` inside | Python virtualenv |
-| `__pycache__`, `.pytest_cache`, `.mypy_cache`, `.ruff_cache`, `.tox`, `.terraform`, `_build`, `deps`, `elm-stuff` | the tool's own project file where the name is ambiguous | Caches and fetched dependencies |
-
-Once a folder matches, the walk stops there — the `node_modules` inside a `node_modules` is already
-counted by its parent. Anything under 10 MB is left out; it costs more attention than it returns.
-
-Each row names the project first (`storefront / node_modules`), then what the folder is, then how
-long since anything in it changed. Hovering shows the full path and what puts the folder back
-(`npm install`, `cargo build`, `pod install`). Nothing is pre-ticked, and the delete guard re-checks
-every path before removing it: inside your home folder, outside `~/Library`, at least two levels
-down, a real folder rather than a symlink, and named something a rule would have matched.
-
-This is the most expensive scan SpaceBar does — a few seconds on a machine full of projects. Untick
-**Project Build Files** in Settings → Scanning if you would rather not pay it.
-
-Map needs at least 3 items to draw — one or two tiles say less than a bar does. Below that it
-shows Gauge and says why, rather than silently ignoring your choice. There is no minimum size:
-proportion reads the same whether the total is 40 MB or 40 GB. Small targets fold into one
-"Everything else" tile rather than becoming unreadable slivers.
-
-### Settings
-
-Open Settings from the gear in the panel footer; it slides in over the panel.
-
-| Section | Controls |
-| --- | --- |
-| Look | Layout, menu bar pill style, percentage vs size, row density |
-| Limits | Warning and critical thresholds, each restated in GB against your actual disk |
-| Scanning | How old counts as stale, which targets to scan at all, rescan on open |
-
-"Stale" is one number driving three things: when an age turns amber, what the review filter chip
-says, and what arrives pre-selected.
-
-Sizes use decimal GB (1 GB = 1,000³ bytes), same style as System Settings → Storage.
-
-## Tech stack
-
-| Layer | Choice |
-| --- | --- |
-| Language | Swift 5 |
-| UI | SwiftUI |
-| Menu bar / panel | AppKit (`NSStatusItem`, `NSPanel`) so the free-space pill can stay colored |
-| Project generation | [XcodeGen](https://github.com/yonaskolb/XcodeGen) (`project.yml`) |
-| Snapshot tests | [swift-snapshot-testing](https://github.com/pointfreeco/swift-snapshot-testing) |
-| Platform | Native macOS app (non-sandboxed, Hardened Runtime) |
-| Tooling | SwiftFormat + SwiftLint (pre-build scripts, warnings as errors) |
-
-No third-party runtime dependencies. Cleanup and sizing use Foundation, `Process` (`du`, `rm`, `simctl`, `docker`, Finder via AppleScript), and system APIs.
-
-## Prerequisites
-
-### To use SpaceBar
-
-- macOS 14 Sonoma or later
-- A built `SpaceBar.app` (from Releases or built locally)
-- Full Disk Access for some cleanups; Automation access to Finder for Trash (prompted when needed)
-
-Optional tools only matter if you clean those targets (Xcode, Docker, pnpm, and so on). SpaceBar skips targets that are not present.
-
-### To build from source
-
-- macOS 14+
-- Xcode 15+ (Command Line Tools / `xcodebuild`)
-- [XcodeGen](https://github.com/yonaskolb/XcodeGen) (`brew install xcodegen`)
-
-Optional: [SwiftFormat](https://github.com/nicklockwood/SwiftFormat) and [SwiftLint](https://github.com/realm/SwiftLint) for local checks (also run automatically on build if installed).
+Sizes use decimal GB (1 GB = 1,000³ bytes), same as System Settings → Storage.
 
 ## How it works
 
-SpaceBar runs as a menu-bar-only app (no Dock icon). Click the pill to open the panel.
+SpaceBar runs as a menu-bar-only app (no Dock icon). Click the pill to open the panel. On open it scans cleanup targets under your home folder (and process temp), measures reclaimable size, and shows only targets that have something to free. Cleaning uses a path allowlist so deletes stay limited to approved cache locations, and sensitive targets ask for a stronger confirmation.
 
-On open it scans cleanup targets under your home folder (and process temp), measures reclaimable size, and shows only targets that have something to free. Cleaning uses a path allowlist so deletes stay limited to approved cache locations. Sensitive targets ask for a stronger confirmation.
+Project build folders are found by walking your home directory (skipping `Library`, `Pictures`, `Movies`, `Music`, `Applications`) and matching regenerable folder names against the project file that proves a tool owns them — e.g. `node_modules` next to `package.json`, `target` next to `Cargo.toml`, `.venv` containing `pyvenv.cfg`. Nothing is pre-ticked, and a delete guard re-checks every path before removing it.
 
-Screenshots and recordings are found by common macOS filenames (`Screenshot…`, `Screen Recording…`) in Desktop, Pictures, Movies, Downloads, and your custom screencapture folder if it is under your home directory. Downloaded installer packages (`.dmg`, `.pkg`, `.iso`) are found in Downloads and Desktop and shown as their own item. Project build files are found by walking your home folder for projects and matching regenerable folders against the file that proves a tool owns them. All three are review lists: you pick what to remove, and nothing is deleted until you confirm.
-
-Some folders need Full Disk Access. Emptying Trash may need Automation access to Finder.
+Some cleanups need Full Disk Access; emptying Trash needs Automation access to Finder (both prompted when needed).
 
 ## How to use
 
 1. Launch SpaceBar. The free-space pill appears in the menu bar.
-2. Click the pill to open the panel. Wait for the first scan to finish.
-3. Read the headline: how much you can recover, and what it costs. Anything untouched for longer
-   than your stale setting arrives already ticked.
-4. Adjust the ticks. Rows touched recently are left off deliberately — the age line tells you what
-   cleaning one would cost ("forces a full rebuild", "will re-download").
-5. Press **Clean selected**, read the list in the confirmation, then confirm to delete permanently.
-6. For screenshots, recordings, installers and project build files, open the row to review
-   individual items before deleting.
-7. Use the refresh control to rescan sizes and free space after cleaning.
+2. Click the pill to open the panel and wait for the first scan.
+3. Read the headline: how much you can recover, and what it costs.
+4. Adjust the ticks — rows touched recently are left off deliberately.
+5. Press **Clean selected**, review the confirmation list, and confirm.
+6. Use the refresh control to rescan after cleaning.
 
-Quit from the panel footer when you are done, or leave it running for a live free-space meter.
-
-### Permissions
-
-**Full Disk Access** (needed for some Library caches and related cleanups):
-
-1. System Settings → Privacy & Security → Full Disk Access
-2. Enable SpaceBar (add the `.app` with + if it is missing)
-3. Quit and reopen SpaceBar
-
-Debug builds are tied to the built binary path. After rebuilding, toggle access off/on or re-add the app.
-
-**Automation → Finder** may be requested the first time Trash size or Empty Trash runs.
-
-### Cleanup targets
-
-| Area | Examples |
-| --- | --- |
-| General | User temp files, app caches |
-| Xcode | DerivedData, Archives, iOS DeviceSupport, unavailable simulators |
-| Android / Java | AVDs, Gradle caches |
-| Packages | CocoaPods, SwiftPM, npm, pnpm |
-| Tools | Homebrew, uv, pip, Docker build cache |
-| Trash | Empty Trash |
-| Media | Screenshots and screen recordings (review before delete) |
-| Installers | Downloaded installer packages — `.dmg`, `.pkg`, `.iso` (review before delete) |
-| Project build files | `node_modules`, `target`, `build`, `Pods`, `.venv`, `.gradle` and friends, found inside your own projects (review before delete) |
-
-Caches are regenerable; the next build or install may take longer. Archives, AVDs, and Trash are treated as higher risk and use stronger confirmation.
-
-## Build from source
+### Build from source
 
 ```bash
 cd ~/Projects/SpaceBar
@@ -198,64 +50,28 @@ open build/Build/Products/Debug/SpaceBar.app
 
 Or open `SpaceBar.xcodeproj` in Xcode and run.
 
-```bash
-swiftformat SpaceBar SpaceBarTests --config .swiftformat
-swiftlint lint --config .swiftlint.yml --strict SpaceBar SpaceBarTests
-```
+Requires macOS 14+ and Xcode 15+ (Command Line Tools); [XcodeGen](https://github.com/yonaskolb/XcodeGen) to generate the project. Built with Swift, SwiftUI, and AppKit — no third-party runtime dependencies.
 
-## Snapshot tests
+## How to contribute
 
-UI snapshots cover the cleanup panel and menu bar pill for three free-space levels:
+Contributions are welcome — bug reports, feature ideas, and pull requests alike.
 
-| Case | Free space | Color |
-| --- | --- | --- |
-| Good | ~62% free | Green |
-| Low | 15% free | Orange |
-| Critical | 5% free | Red |
+1. Fork the repo and create a branch off `main`.
+2. Make your change, following the build steps above.
+3. Run formatting, linting, and tests before opening a PR:
 
-Fixtures seed fixed disk/cache/media data so images stay stable.
+   ```bash
+   swiftformat SpaceBar SpaceBarTests --config .swiftformat
+   swiftlint lint --config .swiftlint.yml --strict SpaceBar SpaceBarTests
+   xcodebuild -scheme SpaceBar -destination 'platform=macOS,arch=arm64' -derivedDataPath build test
+   ```
 
-```bash
-xcodegen generate
-xcodebuild -scheme SpaceBar -destination 'platform=macOS,arch=arm64' -derivedDataPath build test
-```
+4. Open a PR describing what changed and why.
 
-Ledger and Map layouts, the settings sections, and the treemap layout algorithm have their own
-tests. Reference images live in `SpaceBarTests/__Snapshots__/`. README assets under `Docs/` are refreshed when the snapshot tests run (`spacebar-panel-*.png`, `spacebar-pill-*.png`).
+Snapshot tests cover the panel and menu bar pill across three free-space levels (good/low/critical); references live in `SpaceBarTests/__Snapshots__/`. If your change affects the UI, update the snapshots rather than leaving them failing.
 
-To re-record after intentional UI changes, delete the references and run the suite — missing
-references are always written back:
+Found a bug or have an idea? Open an issue.
 
-```bash
-rm -f SpaceBarTests/__Snapshots__/PanelSnapshotTests/*.png
-xcodebuild -scheme SpaceBar -destination 'platform=macOS,arch=arm64' -derivedDataPath build test  # records, reports failures
-xcodebuild -scheme SpaceBar -destination 'platform=macOS,arch=arm64' -derivedDataPath build test  # verifies
-```
+## Copyright
 
-`SNAPSHOT_TESTING_RECORD=all` does not work here — `xcodebuild` does not forward it to the test
-process, so the run silently compares instead of recording. The giveaway is a failure saying
-"does not match reference" rather than "Automatically recorded snapshot".
-
-## Project layout
-
-```
-SpaceBar/
-├── project.yml
-├── Docs/spacebar-panel.png
-├── SpaceBar.xcodeproj
-├── SpaceBar/
-│   ├── Models/
-│   ├── Services/
-│   ├── Views/
-│   └── Utilities/
-└── SpaceBarTests/
-    ├── PanelSnapshotTests.swift
-    ├── Support/
-    └── __Snapshots__/
-```
-
-## License
-
-Copyright © 2026 Muddassir Iqbal
-
-Licensed under the [MIT License](LICENSE).
+Copyright © 2026 Muddassir Iqbal. Licensed under the [MIT License](LICENSE).
