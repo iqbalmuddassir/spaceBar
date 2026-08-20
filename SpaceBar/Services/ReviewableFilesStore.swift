@@ -265,8 +265,8 @@ final class ReviewableFilesStore: ObservableObject {
             let process = Process()
             process.executableURL = URL(fileURLWithPath: "/bin/rm")
             process.arguments = [isDirectory ? "-rf" : "-f", url.path]
-            process.standardOutput = Pipe()
-            process.standardError = Pipe()
+            process.standardOutput = FileHandle.nullDevice
+            process.standardError = FileHandle.nullDevice
             do {
                 try process.run()
                 process.waitUntilExit()

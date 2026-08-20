@@ -44,12 +44,12 @@ enum DirectorySizer {
         process.arguments = ["-sk", url.path]
         let out = Pipe()
         process.standardOutput = out
-        process.standardError = Pipe()
+        process.standardError = FileHandle.nullDevice
         do {
             try process.run()
+            let data = out.fileHandleForReading.readDataToEndOfFile()
             process.waitUntilExit()
             guard process.terminationStatus == 0 else { return nil }
-            let data = out.fileHandleForReading.readDataToEndOfFile()
             guard let line = String(data: data, encoding: .utf8)?
                 .trimmingCharacters(in: .whitespacesAndNewlines)
                 .split(whereSeparator: { $0 == "\t" || $0 == " " })

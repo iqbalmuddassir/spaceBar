@@ -36,6 +36,15 @@ struct CleanResult: Sendable {
     let bytesAfter: UInt64
     let deletedEntries: Int
     let failedEntries: Int
+    let failedPaths: [String]
+
+    init(bytesBefore: UInt64, bytesAfter: UInt64, deletedEntries: Int, failedEntries: Int, failedPaths: [String] = []) {
+        self.bytesBefore = bytesBefore
+        self.bytesAfter = bytesAfter
+        self.deletedEntries = deletedEntries
+        self.failedEntries = failedEntries
+        self.failedPaths = failedPaths
+    }
 
     var bytesFreed: UInt64 {
         bytesBefore > bytesAfter ? bytesBefore - bytesAfter : 0
@@ -111,8 +120,8 @@ enum CleanerService {
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/open")
         process.arguments = [urlString]
-        process.standardOutput = Pipe()
-        process.standardError = Pipe()
+        process.standardOutput = FileHandle.nullDevice
+        process.standardError = FileHandle.nullDevice
         do {
             try process.run()
             process.waitUntilExit()
@@ -133,7 +142,7 @@ enum CleanerService {
 
     private enum ItemOutcome {
         case deleted
-        case failedValidation(String)
+        case failedValidation(name: String, message: String)
         case failedRemove(name: String, likelyFDA: Bool)
         case failedListing(name: String)
     }
@@ -157,7 +166,8 @@ enum CleanerService {
             bytesBefore: before,
             bytesAfter: after,
             deletedEntries: tally.deleted,
-            failedEntries: tally.failed
+            failedEntries: tally.failed,
+            failedPaths: tally.failedPaths
         )
 
         if tally.deleted == 0 {
@@ -203,7 +213,7 @@ enum CleanerService {
             try DeletePathGuard.validateForCleanupDelete(item)
         } catch {
             let message = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
-            return .failedValidation(message)
+            return .failedValidation(name: item.lastPathComponent, message: message)
         }
         if forceRemove(item) {
             return .deleted
@@ -218,6 +228,7 @@ enum CleanerService {
         var failed = 0
         var permissionFails = 0
         var lastError: String?
+        var failedPaths: [String] = []
     }
 
     private static func tally(_ outcomes: [ItemOutcome]) -> Tally {
@@ -227,11 +238,13 @@ enum CleanerService {
             switch outcome {
             case .deleted:
                 tally.deleted += 1
-            case let .failedValidation(message):
+            case let .failedValidation(name, message):
                 tally.failed += 1
+                tally.failedPaths.append(name)
                 tally.lastError = message
             case let .failedRemove(name, likelyFDA):
                 tally.failed += 1
+                tally.failedPaths.append(name)
                 tally.lastError = name
                 if likelyFDA {
                     tally.permissionFails += 1
@@ -239,6 +252,7 @@ enum CleanerService {
             case let .failedListing(name):
                 tally.failed += 1
                 tally.permissionFails += 1
+                tally.failedPaths.append(name)
                 tally.lastError = "Could not list \(name)"
             }
         }
@@ -269,8 +283,8 @@ enum CleanerService {
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/bin/rm")
         process.arguments = ["-rf", url.path]
-        process.standardOutput = Pipe()
-        process.standardError = Pipe()
+        process.standardOutput = FileHandle.nullDevice
+        process.standardError = FileHandle.nullDevice
         do {
             try process.run()
             process.waitUntilExit()
@@ -307,19 +321,20 @@ enum CleanerService {
         process.executableURL = URL(fileURLWithPath: executable)
         process.arguments = arguments
         let err = Pipe()
-        process.standardOutput = Pipe()
+        process.standardOutput = FileHandle.nullDevice
         process.standardError = err
         do {
             try process.run()
+            let errData = err.fileHandleForReading.readDataToEndOfFile()
             process.waitUntilExit()
+            guard process.terminationStatus == 0 else {
+                let message = String(data: errData, encoding: .utf8)?
+                    .trimmingCharacters(in: .whitespacesAndNewlines)
+                throw CleanerError
+                    .commandFailed(message?.isEmpty == false ? message! : "Command failed (\(process.terminationStatus))")
+            }
         } catch {
             throw CleanerError.commandFailed(error.localizedDescription)
-        }
-        guard process.terminationStatus == 0 else {
-            let message = String(data: err.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8)?
-                .trimmingCharacters(in: .whitespacesAndNewlines)
-            throw CleanerError
-                .commandFailed(message?.isEmpty == false ? message! : "Command failed (\(process.terminationStatus))")
         }
     }
 }
