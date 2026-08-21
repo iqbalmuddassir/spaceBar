@@ -60,3 +60,11 @@ fastlane/test_output
 .vscode/
 .cursor/
 *.log
+
+# Product docs kept local (not tracked)
+Docs/BRD.md
+Docs/ENHANCEMENT.md
+Docs/OPEN_PRODUCT_DECISIONS.md
+Docs/PRD.md
+Docs/PRODUCT_ENHANCEMENT_ANALYSIS.md
+Docs/choudharyCommits.md
