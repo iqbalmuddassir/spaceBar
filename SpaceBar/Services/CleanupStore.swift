@@ -2,6 +2,26 @@ import Combine
 import Foundation
 import SwiftUI
 
+struct BatchCleanSummary: Equatable {
+    var succeeded: Int
+    var failed: Int
+    var bytesFreed: UInt64
+    var failedNames: [String]
+
+    var statusMessage: String {
+        let freed = ByteFormatting.string(from: bytesFreed)
+        if failed == 0 {
+            let noun = succeeded == 1 ? "target" : "targets"
+            return "Cleaned \(succeeded) \(noun) · freed \(freed)"
+        }
+        if succeeded == 0 {
+            let noun = failed == 1 ? "target" : "targets"
+            return "Could not clean \(failed) \(noun)"
+        }
+        return "Freed \(freed) · \(succeeded) ok, \(failed) failed"
+    }
+}
+
 @MainActor
 final class CleanupStore: ObservableObject {
     @Published private(set) var results: [TargetScanResult] = []
@@ -9,21 +29,17 @@ final class CleanupStore: ObservableObject {
     @Published private(set) var scanProgress: Double = 0
     @Published private(set) var statusMessage: String?
     @Published var showFullDiskAccessPrompt = false
-    @Published var pendingConfirmID: String?
+    @Published var showAutomationAccessPrompt = false
+    @Published var isBatchConfirming = false
+    @Published var isShowingSettings = false
+    @Published var showFirstRunPrimer = false
+    @Published private(set) var lastBatchSummary: BatchCleanSummary?
     /// Only rows the user has actually touched. Everything else defers to the recency default,
     /// so a rescan that changes an age also changes what arrives ticked.
     @Published var explicitSelection: [String: Bool] = [:]
-    @Published var isBatchConfirming = false
-    @Published var isShowingSettings = false
     /// Targets the user switched off in Settings. Skipped before the scan, not after, so
     /// unticking one actually makes opening the panel faster.
     var excludedTargetIDs: Set<String> = []
-
-    var pendingConfirm: CleanTarget? {
-        guard let pendingConfirmID else { return nil }
-        return results.first(where: { $0.id == pendingConfirmID })?.target
-            ?? CleanTargetRegistry.allTargets().first(where: { $0.id == pendingConfirmID })
-    }
 
     var totalReclaimable: UInt64 {
         results.reduce(0) { $0 + $1.byteSize }
@@ -62,6 +78,7 @@ final class CleanupStore: ObservableObject {
         isScanning = true
         scanProgress = 0
         statusMessage = "Scanning…"
+        lastBatchSummary = nil
         prepareResultsForScan(clearExisting: clearExisting)
 
         let targets = CleanTargetRegistry.allTargets().filter { !excludedTargetIDs.contains($0.id) }
@@ -73,21 +90,57 @@ final class CleanupStore: ObservableObject {
     }
 
     func resetTransientUIState() {
-        pendingConfirmID = nil
         showFullDiskAccessPrompt = false
+        showAutomationAccessPrompt = false
         isBatchConfirming = false
         isShowingSettings = false
+        showFirstRunPrimer = false
+        lastBatchSummary = nil
     }
 
     /// Deletes each selected target in turn, keeping the existing per-target guards and
     /// error handling rather than introducing a second delete path.
     func performBatchClean(_ targets: [CleanTarget], diskMonitor: DiskSpaceMonitor, settings: AppSettings) {
         isBatchConfirming = false
+        lastBatchSummary = nil
         Task {
+            var succeeded = 0
+            var failed = 0
+            var bytesFreed: UInt64 = 0
+            var failedNames: [String] = []
+
             for target in targets {
-                await performDelete(target, diskMonitor: diskMonitor, settings: settings)
+                let outcome = await performDelete(target, diskMonitor: diskMonitor, settings: settings)
+                switch outcome {
+                case let .success(freed):
+                    succeeded += 1
+                    bytesFreed += freed
+                case .failure:
+                    failed += 1
+                    failedNames.append(target.name)
+                }
             }
-            clearSelectionOverrides()
+
+            let summary = BatchCleanSummary(
+                succeeded: succeeded,
+                failed: failed,
+                bytesFreed: bytesFreed,
+                failedNames: failedNames
+            )
+            lastBatchSummary = summary
+            setStatus(summary.statusMessage)
+
+            // Keep failed rows selected so the user can retry; clear the rest.
+            var nextSelection: [String: Bool] = [:]
+            for name in failedNames {
+                if let id = results.first(where: { $0.target.name == name })?.id {
+                    nextSelection[id] = true
+                }
+            }
+            for result in results where nextSelection[result.id] == nil {
+                nextSelection[result.id] = false
+            }
+            explicitSelection = nextSelection
         }
     }
 
@@ -99,8 +152,8 @@ final class CleanupStore: ObservableObject {
         hasCompletedInitialScan = true
         isScanning = false
         scanProgress = 1
-        pendingConfirmID = nil
         showFullDiskAccessPrompt = false
+        showAutomationAccessPrompt = false
         self.results = results
         self.statusMessage = statusMessage
     }
@@ -219,28 +272,9 @@ final class CleanupStore: ObservableObject {
             }
         }
     }
+}
 
-    func requestDelete(_ target: CleanTarget) {
-        withAnimation(.snappy(duration: 0.2)) {
-            pendingConfirmID = target.id
-        }
-    }
-
-    func cancelConfirm() {
-        withAnimation(.snappy(duration: 0.2)) {
-            pendingConfirmID = nil
-        }
-    }
-
-    func confirmDelete(_ target: CleanTarget, diskMonitor: DiskSpaceMonitor, settings: AppSettings) {
-        withAnimation(.snappy(duration: 0.2)) {
-            pendingConfirmID = nil
-        }
-        Task {
-            await performDelete(target, diskMonitor: diskMonitor, settings: settings)
-        }
-    }
-
+extension CleanupStore {
     private func setStatus(_ message: String) {
         statusMessage = message
         statusClearTask?.cancel()
@@ -252,7 +286,12 @@ final class CleanupStore: ObservableObject {
         }
     }
 
-    func performDelete(_ target: CleanTarget, diskMonitor: DiskSpaceMonitor, settings: AppSettings) async {
+    @discardableResult
+    func performDelete(
+        _ target: CleanTarget,
+        diskMonitor: DiskSpaceMonitor,
+        settings: AppSettings
+    ) async -> Result<UInt64, CleanerError> {
         if let index = results.firstIndex(where: { $0.id == target.id }) {
             withAnimation(.easeInOut(duration: 0.15)) {
                 results[index].phase = .deleting
@@ -293,24 +332,47 @@ final class CleanupStore: ObservableObject {
             try? await Task.sleep(nanoseconds: 450_000_000)
             await rescan(targetID: target.id)
             await diskMonitor.refreshAfterCleaning()
+            return .success(cleanResult.bytesFreed)
         } catch {
-            let cleanerError = (error as? CleanerError) ?? .unknown(error.localizedDescription)
+            return await handleDeleteFailure(error, targetID: target.id)
+        }
+    }
+
+    private func handleDeleteFailure(
+        _ error: Error,
+        targetID: String
+    ) async -> Result<UInt64, CleanerError> {
+        let cleanerError = (error as? CleanerError) ?? .unknown(error.localizedDescription)
+        if cleanerError.isAutomationRelated {
+            showAutomationAccessPrompt = true
+        } else if cleanerError.isPermissionRelated {
             let hasFDA = await Task.detached { CleanerService.hasFullDiskAccess() }.value
-            if cleanerError.isPermissionRelated, !hasFDA {
+            if !hasFDA {
                 showFullDiskAccessPrompt = true
             }
-            let message: String = if cleanerError.isPermissionRelated, hasFDA {
-                "Some items are locked or in use. Quit related apps and retry."
-            } else {
-                cleanerError.localizedDescription
-            }
-            setStatus(message)
-            if let index = results.firstIndex(where: { $0.id == target.id }) {
-                withAnimation {
-                    results[index].phase = .error(message)
-                    results[index].errorMessage = message
-                }
+        }
+
+        let message = await deleteFailureMessage(for: cleanerError)
+        setStatus(message)
+        if let index = results.firstIndex(where: { $0.id == targetID }) {
+            withAnimation {
+                results[index].phase = .error(message)
+                results[index].errorMessage = message
             }
         }
+        return .failure(cleanerError)
+    }
+
+    private func deleteFailureMessage(for cleanerError: CleanerError) async -> String {
+        if cleanerError.isAutomationRelated {
+            return cleanerError.localizedDescription
+        }
+        guard cleanerError.isPermissionRelated else {
+            return cleanerError.localizedDescription
+        }
+        let hasFDA = await Task.detached { CleanerService.hasFullDiskAccess() }.value
+        return hasFDA
+            ? "Some items are locked or in use. Quit related apps and retry."
+            : cleanerError.localizedDescription
     }
 }

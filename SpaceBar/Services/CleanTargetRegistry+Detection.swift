@@ -1,7 +1,8 @@
 import Foundation
 
 extension CleanTargetRegistry {
-    static let skippedCacheNames: Set<String> = [
+    /// Fixed skips for system / shared caches that must never appear under App Caches.
+    static let staticSkippedCacheNames: Set<String> = [
         "CloudKit",
         "com.apple.Safari",
         "FamilyCircle",
@@ -20,6 +21,19 @@ extension CleanTargetRegistry {
         "bazel"
     ]
 
+    /// Dedicated reclaim rows under `~/Library/Caches` that are gated on folder existence.
+    /// Listed here so App Caches still skips them when the dedicated target is not currently registered.
+    static let knownDedicatedLibraryCachesNames: Set<String> = [
+        "ollama",
+        "claude-cli-nodejs"
+    ]
+
+    static var skippedCacheNames: Set<String> {
+        staticSkippedCacheNames
+            .union(knownDedicatedLibraryCachesNames)
+            .union(dedicatedLibraryCachesFolderNames())
+    }
+
     static func safeCacheChildren(of caches: URL) -> [URL] {
         let fileManager = FileManager.default
         guard let children = try? fileManager.contentsOfDirectory(
@@ -28,9 +42,10 @@ extension CleanTargetRegistry {
             options: [.skipsHiddenFiles]
         ) else { return [] }
 
+        let skipped = skippedCacheNames
         return children.filter { url in
             let name = url.lastPathComponent
-            if skippedCacheNames.contains(name) {
+            if skipped.contains(name) {
                 return false
             }
             if name.hasPrefix("com.apple.") {

@@ -51,6 +51,13 @@
             </BuildableReference>
          </TestableReference>
       </Testables>
+      <EnvironmentVariables>
+         <EnvironmentVariable
+            key = "SWIFT_BACKTRACE"
+            value = "0"
+            isEnabled = "YES">
+         </EnvironmentVariable>
+      </EnvironmentVariables>
       <CommandLineArguments>
       </CommandLineArguments>
    </TestAction>

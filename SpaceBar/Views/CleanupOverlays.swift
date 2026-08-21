@@ -29,6 +29,7 @@ struct FullDiskAccessOverlay: View {
                 DialogButton(title: "Not Now") {
                     isPresented = false
                 }
+                .keyboardShortcut(.cancelAction)
                 DialogButton(title: "Open Settings", isDefault: true) {
                     CleanerService.openFullDiskAccessSettings()
                 }
@@ -38,17 +39,68 @@ struct FullDiskAccessOverlay: View {
     }
 
     private func step(_ number: Int, _ text: String) -> some View {
-        HStack(alignment: .firstTextBaseline, spacing: 8) {
-            Text("\(number)")
-                .font(.caption2.weight(.bold))
-                .foregroundStyle(Color.accentColor)
-                .frame(width: 16, height: 16)
-                .background(Circle().fill(Color.accentColor.opacity(0.15)))
-            Text(text)
+        permissionStep(number, text)
+    }
+}
+
+struct AutomationAccessOverlay: View {
+    @Binding var isPresented: Bool
+
+    var body: some View {
+        ZStack {
+            DialogBackdrop { isPresented = false }
+
+            PanelDialog(
+                symbol: "hand.raised.fill",
+                title: "Automation Access Needed",
+                message: """
+                Emptying Trash needs permission to control Finder. \
+                Enable Automation for SpaceBar to continue.
+                """
+            ) {
+                VStack(alignment: .leading, spacing: 7) {
+                    permissionStep(1, "Open Privacy & Security → Automation")
+                    permissionStep(2, "Find SpaceBar and enable Finder")
+                    permissionStep(3, "Return here and Empty Trash again")
+                }
+                .padding(.top, 4)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+                Text(
+                    """
+                    SpaceBar can also try a direct Trash delete when Finder Automation \
+                    is denied; that still needs Full Disk Access.
+                    """
+                )
                 .font(.caption)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(.tertiary)
+                .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
+            } actions: {
+                DialogButton(title: "Not Now") {
+                    isPresented = false
+                }
+                .keyboardShortcut(.cancelAction)
+                DialogButton(title: "Open Settings", isDefault: true) {
+                    CleanerService.openAutomationSettings()
+                }
+                .keyboardShortcut(.defaultAction)
+            }
         }
+    }
+}
+
+private func permissionStep(_ number: Int, _ text: String) -> some View {
+    HStack(alignment: .firstTextBaseline, spacing: 8) {
+        Text("\(number)")
+            .font(.caption2.weight(.bold))
+            .foregroundStyle(Color.accentColor)
+            .frame(width: 16, height: 16)
+            .background(Circle().fill(Color.accentColor.opacity(0.15)))
+        Text(text)
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            .fixedSize(horizontal: false, vertical: true)
     }
 }
 
@@ -63,6 +115,12 @@ struct BatchCleanConfirmOverlay: View {
         targets.contains { $0.target.requiresStrongConfirm || $0.target.isPermanent }
     }
 
+    private var strongWarnings: [String] {
+        targets
+            .filter { $0.target.requiresStrongConfirm || $0.target.isPermanent }
+            .map(\.target.confirmationMessage)
+    }
+
     var body: some View {
         ZStack {
             DialogBackdrop(onTap: onCancel)
@@ -71,7 +129,9 @@ struct BatchCleanConfirmOverlay: View {
                 symbol: "arrow.down.circle",
                 tint: hasStrongConfirm ? .red : .accentColor,
                 title: "Delete \(targets.count) item\(targets.count == 1 ? "" : "s") permanently?",
-                message: "Frees \(ByteFormatting.string(from: totalBytes))"
+                message: totalBytes > 0
+                    ? "Frees \(ByteFormatting.string(from: totalBytes))"
+                    : "Selected items will be removed permanently"
             ) {
                 VStack(alignment: .leading, spacing: 5) {
                     ForEach(targets) { result in
@@ -91,11 +151,15 @@ struct BatchCleanConfirmOverlay: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
 
                 if hasStrongConfirm {
-                    Text("Includes items that cannot be regenerated. This cannot be undone.")
-                        .font(.caption)
-                        .foregroundStyle(.red)
-                        .multilineTextAlignment(.center)
-                        .fixedSize(horizontal: false, vertical: true)
+                    VStack(alignment: .leading, spacing: 6) {
+                        ForEach(Array(strongWarnings.enumerated()), id: \.offset) { _, warning in
+                            Text(warning)
+                                .font(.caption)
+                                .foregroundStyle(.red)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
             } actions: {
                 DialogButton(title: "Cancel", action: onCancel)
@@ -112,42 +176,51 @@ struct BatchCleanConfirmOverlay: View {
     }
 }
 
-struct CleanupConfirmOverlay: View {
-    let target: CleanTarget
-    let onCancel: () -> Void
-    let onConfirm: () -> Void
+struct FirstRunPrimerOverlay: View {
+    @Binding var isPresented: Bool
+    let onContinue: () -> Void
 
     var body: some View {
         ZStack {
-            DialogBackdrop(onTap: onCancel)
+            DialogBackdrop {
+                onContinue()
+            }
 
             PanelDialog(
-                symbol: target.isPermanent ? "trash" : "exclamationmark.triangle",
-                tint: accent,
-                title: target.confirmationTitle,
-                message: target.name
+                symbol: "sparkles",
+                title: "Before you clean",
+                message: """
+                SpaceBar reclaims regenerable clutter from your Mac. \
+                Deletes are permanent so space frees immediately.
+                """
             ) {
-                Text(target.safetyNote)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .padding(.top, 2)
+                VStack(alignment: .leading, spacing: 8) {
+                    primerStep("Some Library caches need Full Disk Access.")
+                    primerStep("Empty Trash needs Automation access to Finder.")
+                    primerStep("Only tick what you are ready to remove — caches rebuild; personal files do not.")
+                }
+                .padding(.top, 4)
+                .frame(maxWidth: .infinity, alignment: .leading)
             } actions: {
-                DialogButton(title: "Cancel", action: onCancel)
-                    .keyboardShortcut(.cancelAction)
-                DialogButton(
-                    title: target.confirmButtonTitle,
-                    isDefault: true,
-                    tint: accent,
-                    action: onConfirm
-                )
-                .keyboardShortcut(.defaultAction)
+                DialogButton(title: "Open FDA Settings") {
+                    CleanerService.openFullDiskAccessSettings()
+                }
+                DialogButton(title: "Continue", isDefault: true, action: onContinue)
+                    .keyboardShortcut(.defaultAction)
+                    .keyboardShortcut(.cancelAction) // Escape also dismisses the one-time primer
             }
         }
     }
 
-    private var accent: Color {
-        target.isPermanent || target.requiresStrongConfirm ? .red : .accentColor
+    private func primerStep(_ text: String) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 8) {
+            Image(systemName: "checkmark.circle.fill")
+                .font(.caption)
+                .foregroundStyle(Color.accentColor)
+            Text(text)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
     }
 }

@@ -16,6 +16,12 @@ struct ReclaimListHeader: View {
                 .buttonStyle(.plain)
                 .font(.caption.weight(.medium))
                 .foregroundStyle(Color.accentColor)
+                .accessibilityLabel(allSelected ? "Select none" : "Select all reclaimable targets")
+                .accessibilityHint(
+                    allSelected
+                        ? "Clears selection for cache targets. Trash stays opted out."
+                        : "Selects all cache targets. Trash stays opted out."
+                )
         }
         .padding(.horizontal, 16)
         .padding(.top, 8)
@@ -25,6 +31,7 @@ struct ReclaimListHeader: View {
 
 struct PanelFooter: View {
     let selectedBytes: UInt64
+    let selectedCount: Int
     let selectionSummary: String?
     let statusMessage: String?
     let isScanning: Bool
@@ -32,17 +39,27 @@ struct PanelFooter: View {
     let targetCount: Int
     let onClean: () -> Void
     let onOpenSettings: () -> Void
+    let onQuit: () -> Void
+
+    private var cleanLabel: String {
+        if selectedBytes > 0 {
+            return "Clean selected · \(ByteFormatting.string(from: selectedBytes))"
+        }
+        return "Clean selected · \(selectedCount) item\(selectedCount == 1 ? "" : "s")"
+    }
 
     var body: some View {
         VStack(spacing: 8) {
-            if selectedBytes > 0 {
+            if selectedCount > 0 {
                 Button(action: onClean) {
-                    Text("Clean selected · \(ByteFormatting.string(from: selectedBytes))")
+                    Text(cleanLabel)
                         .frame(maxWidth: .infinity)
                         .contentTransition(.numericText())
                 }
                 .liquidButtonStyle(prominent: true)
                 .disabled(isBusy)
+                .accessibilityLabel(cleanLabel)
+                .accessibilityHint("Permanently deletes the selected reclaim targets after confirmation")
 
                 if let selectionSummary {
                     Text(selectionSummary)
@@ -72,11 +89,11 @@ struct PanelFooter: View {
                 }
                 .liquidChipButtonStyle()
                 .help("Settings")
+                .accessibilityLabel("Settings")
 
-                Button("Quit") {
-                    NSApplication.shared.terminate(nil)
-                }
-                .liquidChipButtonStyle()
+                Button("Quit", action: onQuit)
+                    .liquidChipButtonStyle()
+                    .accessibilityLabel("Quit SpaceBar")
             }
         }
         .padding(.horizontal, 16)

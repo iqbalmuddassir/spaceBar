@@ -229,6 +229,37 @@ enum CleanTargetRegistry {
         )
     }
 
+    /// Folder names under `~/Library/Caches` that already have dedicated reclaim rows.
+    /// Used so App Caches does not double-count them. Built without calling `safeCacheChildren`
+    /// to avoid recursion through the App Caches target.
+    static func dedicatedLibraryCachesFolderNames() -> Set<String> {
+        let home = FileManager.default.homeDirectoryForCurrentUser
+        let library = home.appendingPathComponent("Library", isDirectory: true)
+        let caches = library.appendingPathComponent("Caches", isDirectory: true)
+        let cachesPath = caches.standardizedFileURL.path
+        let developer = library.appendingPathComponent("Developer/Xcode", isDirectory: true)
+
+        var targets: [CleanTarget] = []
+        targets.append(contentsOf: xcodeTargets(developer: developer))
+        targets.append(contentsOf: androidAndBuildTargets(home: home))
+        targets.append(contentsOf: packageManagerTargets(home: home, caches: caches))
+        targets.append(contentsOf: optionalToolTargets(home: home, caches: caches))
+        targets.append(contentsOf: devCacheTargets(home: home, caches: caches))
+        targets.append(contentsOf: agenticAITargets(home: home, caches: caches))
+
+        var names = Set<String>()
+        for target in targets {
+            guard case let .deletePaths(urls) = target.strategy else { continue }
+            for url in urls {
+                let standardized = url.standardizedFileURL
+                if standardized.deletingLastPathComponent().path == cachesPath {
+                    names.insert(standardized.lastPathComponent)
+                }
+            }
+        }
+        return names
+    }
+
     static func tildePath(_ url: URL) -> String {
         url.path.replacingOccurrences(of: FileManager.default.homeDirectoryForCurrentUser.path, with: "~")
     }

@@ -6,6 +6,8 @@ struct DiskSpaceBar: View {
     var height: CGFloat = 6
     var width: CGFloat?
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     var body: some View {
         GeometryReader { geo in
             let barWidth = geo.size.width
@@ -21,8 +23,8 @@ struct DiskSpaceBar: View {
                         )
                     )
                     .frame(width: max(height, barWidth * fraction))
-                    .animation(.spring(response: 0.4, dampingFraction: 0.85), value: fraction)
-                    .animation(.easeInOut(duration: 0.25), value: color)
+                    .animation(LiquidGlassMotion.content(reduceMotion), value: fraction)
+                    .animation(reduceMotion ? nil : .easeInOut(duration: 0.25), value: color)
             }
         }
         .frame(width: width, height: height)

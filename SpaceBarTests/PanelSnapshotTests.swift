@@ -137,7 +137,7 @@ final class PanelSnapshotTests: XCTestCase {
         )
     }
 
-    func testCleanupConfirmDialog() {
+    func testBatchCleanConfirmDialog() {
         LiquidGlassRuntime.withChrome(false) {
             let target = CleanTarget(
                 id: "xcode-derived",
@@ -148,16 +148,43 @@ final class PanelSnapshotTests: XCTestCase {
                 requiresStrongConfirm: false,
                 isPermanent: false
             )
+            let result = TargetScanResult(
+                target: target,
+                byteSize: 1_500_000_000,
+                phase: .ready
+            )
             let root = ZStack {
                 Color(nsColor: .windowBackgroundColor)
-                CleanupConfirmOverlay(target: target, onCancel: { }, onConfirm: { })
+                BatchCleanConfirmOverlay(
+                    targets: [result],
+                    totalBytes: result.byteSize,
+                    onCancel: { },
+                    onConfirm: { }
+                )
             }
             .frame(width: SnapshotFixtures.panelSize.width, height: SnapshotFixtures.panelSize.height)
 
             assertSnapshot(
                 of: SnapshotExport.makeHostedPanel(rootView: root),
                 as: .image(precision: 0.98, perceptualPrecision: 0.98),
-                named: "cleanup-confirm-dialog",
+                named: "batch-clean-confirm-dialog",
+                testName: #function
+            )
+        }
+    }
+
+    func testAutomationAccessDialog() {
+        LiquidGlassRuntime.withChrome(false) {
+            let root = ZStack {
+                Color(nsColor: .windowBackgroundColor)
+                AutomationAccessOverlay(isPresented: .constant(true))
+            }
+            .frame(width: SnapshotFixtures.panelSize.width, height: SnapshotFixtures.panelSize.height)
+
+            assertSnapshot(
+                of: SnapshotExport.makeHostedPanel(rootView: root),
+                as: .image(precision: 0.98, perceptualPrecision: 0.98),
+                named: "automation-access-dialog",
                 testName: #function
             )
         }
@@ -238,7 +265,9 @@ final class PanelSnapshotTests: XCTestCase {
             )
         }
     }
+}
 
+extension PanelSnapshotTests {
     private func requireLiquidGlassHost() throws {
         guard #available(macOS 26, *) else {
             throw XCTSkip("Liquid Glass snapshots require macOS 26+")
@@ -300,6 +329,7 @@ final class PanelSnapshotTests: XCTestCase {
         let settings = settings ?? SnapshotFixtures.settings()
         // Otherwise a real scan of the recording host replaces the fixture rows mid-snapshot.
         settings.rescanOnOpen = false
+        settings.hasSeenFirstRunPrimer = true
         let monitor = SnapshotFixtures.diskMonitor(for: freeSpaceCase, settings: settings)
         let store = SnapshotFixtures.cleanupStore()
         let reviewCoordinator = SnapshotFixtures.reviewCoordinator()
@@ -315,13 +345,15 @@ final class PanelSnapshotTests: XCTestCase {
     }
 
     private func makeReviewBrowser(for category: ReviewableFileCategory) -> NSView {
-        let monitor = SnapshotFixtures.diskMonitor(for: .good)
+        let settings = SnapshotFixtures.settings()
+        let monitor = SnapshotFixtures.diskMonitor(for: .good, settings: settings)
         let store = SnapshotFixtures.reviewStore(for: category)
         store.showBrowser = true
         store.selectAll()
 
         let root = ReviewableFilesBrowserView(store: store)
             .environmentObject(monitor)
+            .environmentObject(settings)
             .frame(width: SnapshotFixtures.panelSize.width, height: SnapshotFixtures.panelSize.height)
 
         return SnapshotExport.makeHostedPanel(rootView: root)

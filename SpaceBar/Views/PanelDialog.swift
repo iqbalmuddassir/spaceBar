@@ -8,6 +8,8 @@ struct PanelDialog<Actions: View, Details: View>: View {
     @ViewBuilder var details: () -> Details
     @ViewBuilder var actions: () -> Actions
 
+    @AccessibilityFocusState private var isTitleFocused: Bool
+
     var body: some View {
         VStack(spacing: 0) {
             VStack(spacing: 10) {
@@ -20,11 +22,14 @@ struct PanelDialog<Actions: View, Details: View>: View {
                         .foregroundStyle(tint)
                 }
                 .padding(.bottom, 2)
+                .accessibilityHidden(true)
 
                 Text(title)
                     .font(.system(.title3, weight: .semibold))
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityAddTraits(.isHeader)
+                    .accessibilityFocused($isTitleFocused)
 
                 Text(message)
                     .font(.callout)
@@ -57,6 +62,19 @@ struct PanelDialog<Actions: View, Details: View>: View {
         }
         .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
         .shadow(color: .black.opacity(0.32), radius: 26, y: 12)
+        .accessibilityElement(children: .contain)
+        .accessibilityAddTraits(.isModal)
+        .onAppear {
+            // Skip under XCTest: AccessibilityFocusState during NSHostingView layout can trap
+            // the snapshot host (Signal 5) and block the suite on the crash prompt.
+            guard ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] == nil else {
+                return
+            }
+            // Defer so the overlay is in the hierarchy before VoiceOver moves focus.
+            DispatchQueue.main.async {
+                isTitleFocused = true
+            }
+        }
     }
 }
 
@@ -88,6 +106,8 @@ struct DialogBackdrop: View {
             .ignoresSafeArea()
             .contentShape(Rectangle())
             .onTapGesture(perform: onTap)
+            // Keep VoiceOver on the dialog, not the dimmed chrome behind it.
+            .accessibilityHidden(true)
     }
 }
 
@@ -115,5 +135,6 @@ struct DialogButton: View {
         .overlay {
             Self.shape.strokeBorder(Color.primary.opacity(isDefault ? 0 : 0.12), lineWidth: 0.8)
         }
+        .accessibilityLabel(title)
     }
 }

@@ -84,23 +84,41 @@ struct TargetScanResult: Identifiable, Equatable {
     var recency: Recency?
 
     var sizeLabel: String {
-        ByteFormatting.string(from: byteSize)
+        if target.isPermanent, byteSize == 0, (itemCount ?? 0) > 0 {
+            return "size unknown"
+        }
+        return ByteFormatting.string(from: byteSize)
     }
 
     func temperature(staleAfter: TimeInterval, now: Date = Date()) -> RecencyTemperature? {
         recency?.temperature(staleAfter: staleAfter, now: now)
     }
 
-    /// Cold targets arrive pre-selected; anything touched more recently is left for the user
-    /// to opt into, so the one-press cleanup never removes something in active use.
+    /// Cold targets arrive pre-selected; anything touched more recently — or with unknown age —
+    /// is left for the user to opt into, so one-press cleanup never removes active or opaque work.
     func isSafeByDefault(staleAfter: TimeInterval, now: Date = Date()) -> Bool {
         guard !target.isPermanent else { return false }
-        guard let temperature = temperature(staleAfter: staleAfter, now: now) else { return true }
+        guard !target.requiresStrongConfirm else { return false }
+        guard let temperature = temperature(staleAfter: staleAfter, now: now) else { return false }
         return temperature.isSafeByDefault
     }
 
+    /// True when age cannot be determined (CLI strategies, missing dates) — never auto-selected.
+    var hasUnknownAge: Bool {
+        !target.isPermanent && recency == nil
+    }
+
     func recencyCaption(staleAfter: TimeInterval, now: Date = Date()) -> String? {
-        recency?.caption(staleAfter: staleAfter, now: now) ?? staleDescription
+        if let caption = recency?.caption(staleAfter: staleAfter, now: now) {
+            return caption
+        }
+        if let staleDescription {
+            return staleDescription
+        }
+        if hasUnknownAge {
+            return "Age unknown — review before cleaning"
+        }
+        return nil
     }
 
     var isVisible: Bool {

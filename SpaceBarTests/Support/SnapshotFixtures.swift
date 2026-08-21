@@ -45,7 +45,10 @@ enum SnapshotFixtures {
     /// Snapshots pin to shipping defaults so a stored preference can never change a reference image.
     @MainActor
     static func settings() -> AppSettings {
-        .ephemeral()
+        let settings = AppSettings.ephemeral()
+        // Primer would cover the panel and invalidate every cleanup snapshot.
+        settings.hasSeenFirstRunPrimer = true
+        return settings
     }
 
     @MainActor

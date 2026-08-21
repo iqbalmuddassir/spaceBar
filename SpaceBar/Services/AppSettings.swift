@@ -80,6 +80,7 @@ final class AppSettings: ObservableObject {
         static let fullColorOnlyWhenCritical = "fullColorOnlyWhenCritical"
         static let excludedTargetIDs = "excludedTargetIDs"
         static let lifetimeReclaimedBytes = "lifetimeReclaimedBytes"
+        static let hasSeenFirstRunPrimer = "hasSeenFirstRunPrimer"
     }
 
     enum Default {
@@ -113,7 +114,14 @@ final class AppSettings: ObservableObject {
     }
 
     @Published var staleDays: Int {
-        didSet { store(staleDays, Key.staleDays) }
+        didSet {
+            let clamped = staleDays.clamped(to: Self.staleDayRange)
+            if clamped != staleDays {
+                staleDays = clamped
+                return
+            }
+            store(staleDays, Key.staleDays)
+        }
     }
 
     @Published var rescanOnOpen: Bool {
@@ -130,6 +138,10 @@ final class AppSettings: ObservableObject {
 
     @Published var excludedTargetIDs: Set<String> {
         didSet { store(Array(excludedTargetIDs).sorted(), Key.excludedTargetIDs) }
+    }
+
+    @Published var hasSeenFirstRunPrimer: Bool {
+        didSet { store(hasSeenFirstRunPrimer, Key.hasSeenFirstRunPrimer) }
     }
 
     /// Every byte ever actually freed by SpaceBar, across every cleanup — a running counter that
@@ -150,6 +162,7 @@ final class AppSettings: ObservableObject {
         warningFraction = defaults.fraction(Key.warningFraction) ?? Default.warningFraction
         criticalFraction = defaults.fraction(Key.criticalFraction) ?? Default.criticalFraction
         staleDays = defaults.integer(forKey: Key.staleDays, fallback: Default.staleDays)
+            .clamped(to: Self.staleDayRange)
         rescanOnOpen = defaults.bool(forKey: Key.rescanOnOpen, fallback: Default.rescanOnOpen)
         showPercentageInPill = defaults.bool(
             forKey: Key.showPercentageInPill,
@@ -160,6 +173,10 @@ final class AppSettings: ObservableObject {
             fallback: Default.fullColorOnlyWhenCritical
         )
         excludedTargetIDs = Set(defaults.stringArray(forKey: Key.excludedTargetIDs) ?? [])
+        hasSeenFirstRunPrimer = defaults.bool(
+            forKey: Key.hasSeenFirstRunPrimer,
+            fallback: false
+        )
         lifetimeReclaimedBytes = UInt64(defaults.string(forKey: Key.lifetimeReclaimedBytes) ?? "") ?? 0
         clampThresholds()
     }
