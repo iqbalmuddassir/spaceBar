@@ -17,7 +17,8 @@ extension CleanTargetRegistry {
         "go-build",
         "Yarn",
         "nix",
-        "bazel"
+        "bazel",
+        "bazelisk"
     ]
 
     static func safeCacheChildren(of caches: URL) -> [URL] {
