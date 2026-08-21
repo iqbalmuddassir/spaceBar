@@ -280,21 +280,32 @@ enum CleanerService {
             return true
         } catch { }
 
+        if runProcess("/bin/rm", ["-rf", url.path]), !FileManager.default.fileExists(atPath: url.path) {
+            return true
+        }
+
+        // Some caches (e.g. Go's module cache) mark nested files/directories
+        // read-only to prevent accidental edits, which blocks a plain rm -rf.
+        // Make the tree writable first, then retry.
+        _ = runProcess("/bin/chmod", ["-R", "u+w", url.path])
+        _ = runProcess("/bin/rm", ["-rf", url.path])
+        return !FileManager.default.fileExists(atPath: url.path)
+    }
+
+    @discardableResult
+    private static func runProcess(_ executablePath: String, _ arguments: [String]) -> Bool {
         let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/bin/rm")
-        process.arguments = ["-rf", url.path]
+        process.executableURL = URL(fileURLWithPath: executablePath)
+        process.arguments = arguments
         process.standardOutput = FileHandle.nullDevice
         process.standardError = FileHandle.nullDevice
         do {
             try process.run()
             process.waitUntilExit()
-            if process.terminationStatus == 0 {
-                return !FileManager.default.fileExists(atPath: url.path)
-            }
+            return process.terminationStatus == 0
         } catch {
             return false
         }
-        return !FileManager.default.fileExists(atPath: url.path)
     }
 
     private static func shouldDeleteChildren(of url: URL) -> Bool {
