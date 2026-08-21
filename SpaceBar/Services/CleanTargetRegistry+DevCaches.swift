@@ -131,8 +131,32 @@ extension CleanTargetRegistry {
             ))
         }
 
+        let bazeliskCache = bazeliskCacheURL(home: home, caches: caches)
+        if FileManager.default.fileExists(atPath: bazeliskCache.path) {
+            targets.append(CleanTarget(
+                id: "bazelisk-cache",
+                name: "Bazelisk Cache",
+                subtitle: tildePath(bazeliskCache),
+                safetyNote: "Bazelisk re-downloads the pinned Bazel release binaries as needed.",
+                strategy: .deletePaths([bazeliskCache]),
+                requiresStrongConfirm: false,
+                isPermanent: false
+            ))
+        }
+
         targets.append(contentsOf: vscodeTargets(home: home))
         return targets
+    }
+
+    /// Mirrors `uvCacheURL`: Bazelisk honors `BAZELISK_HOME` for a relocated cache dir,
+    /// falling back to its default under `~/Library/Caches/bazelisk`.
+    private static func bazeliskCacheURL(home: URL, caches: URL) -> URL {
+        let fallback = caches.appendingPathComponent("bazelisk", isDirectory: true)
+        if let env = ProcessInfo.processInfo.environment["BAZELISK_HOME"], !env.isEmpty {
+            let url = URL(fileURLWithPath: env, isDirectory: true)
+            return DeletePathGuard.constrainedToolCacheURL(url, requiredPathFragment: "bazelisk") ?? fallback
+        }
+        return fallback
     }
 
     private static func vscodeTargets(home: URL) -> [CleanTarget] {
