@@ -39,7 +39,7 @@ extension CleanTargetRegistry {
         let fileManager = FileManager.default
         guard let children = try? fileManager.contentsOfDirectory(
             at: caches,
-            includingPropertiesForKeys: [.isDirectoryKey],
+            includingPropertiesForKeys: nil,
             options: [.skipsHiddenFiles]
         ) else { return [] }
 

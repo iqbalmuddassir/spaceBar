@@ -160,15 +160,7 @@ struct CleanupPopoverView: View {
                     reviewCoordinator.scanAll()
                     diskMonitor.refresh()
                 } label: {
-                    Image(systemName: "arrow.clockwise")
-                        .font(.body.weight(.semibold))
-                        .rotationEffect(.degrees(store.isScanning ? 360 : 0))
-                        .animation(
-                            store.isScanning && !reduceMotion
-                                ? .linear(duration: 1).repeatForever(autoreverses: false)
-                                : nil,
-                            value: store.isScanning
-                        )
+                    RescanSpinnerIcon(isSpinning: store.isScanning && !reduceMotion)
                 }
                 .liquidChipButtonStyle()
                 .disabled(
@@ -262,7 +254,6 @@ struct CleanupPopoverView: View {
         }
     }
 
-    @ViewBuilder
     private var emptyCleanupState: some View {
         VStack(spacing: 10) {
             if store.excludedTargetsHideAll {
@@ -353,5 +344,39 @@ extension CleanupPopoverView {
                 }
             }
         )
+    }
+}
+
+private struct RescanSpinnerIcon: View {
+    let isSpinning: Bool
+
+    @State private var angle: Double = 0
+    @State private var spinTask: Task<Void, Never>?
+
+    var body: some View {
+        Image(systemName: "arrow.clockwise")
+            .font(.body.weight(.semibold))
+            .rotationEffect(.degrees(angle))
+            .onChange(of: isSpinning) { _, spinning in
+                updateSpinTask(spinning)
+            }
+            .onAppear { updateSpinTask(isSpinning) }
+    }
+
+    private func updateSpinTask(_ spinning: Bool) {
+        guard spinning else {
+            spinTask?.cancel()
+            spinTask = nil
+            return
+        }
+        guard spinTask == nil else { return }
+        spinTask = Task { @MainActor in
+            while !Task.isCancelled {
+                withAnimation(.linear(duration: 1)) {
+                    angle += 360
+                }
+                try? await Task.sleep(nanoseconds: 1_000_000_000)
+            }
+        }
     }
 }
