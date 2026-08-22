@@ -147,13 +147,16 @@ enum ReviewableFileScanner {
         process.executableURL = URL(fileURLWithPath: "/usr/bin/defaults")
         process.arguments = ["read", "com.apple.screencapture", "location"]
         let out = Pipe()
+        let err = Pipe()
         process.standardOutput = out
-        process.standardError = Pipe()
+        process.standardError = err
         do {
             try process.run()
+            let outputData = out.fileHandleForReading.readDataToEndOfFile()
+            _ = err.fileHandleForReading.readDataToEndOfFile()
             process.waitUntilExit()
             guard process.terminationStatus == 0 else { return nil }
-            let path = String(data: out.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8)?
+            let path = String(data: outputData, encoding: .utf8)?
                 .trimmingCharacters(in: .whitespacesAndNewlines)
             guard let path, !path.isEmpty else { return nil }
             let expanded = (path as NSString).expandingTildeInPath

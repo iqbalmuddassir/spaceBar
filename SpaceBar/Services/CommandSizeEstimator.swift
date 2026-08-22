@@ -10,12 +10,15 @@ enum CommandSizeEstimator {
         process.executableURL = URL(fileURLWithPath: "/usr/bin/xcrun")
         process.arguments = ["simctl", "list", "devices", "unavailable"]
         let pipe = Pipe()
+        let errPipe = Pipe()
         process.standardOutput = pipe
-        process.standardError = Pipe()
+        process.standardError = errPipe
         do {
             try process.run()
+            let outputData = pipe.fileHandleForReading.readDataToEndOfFile()
+            _ = errPipe.fileHandleForReading.readDataToEndOfFile()
             process.waitUntilExit()
-            let output = String(data: pipe.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
+            let output = String(data: outputData, encoding: .utf8) ?? ""
             let lines = output.split(separator: "\n").filter { line in
                 let trimmed = line.trimmingCharacters(in: .whitespaces)
                 return !trimmed.isEmpty && !trimmed.hasPrefix("--") && !trimmed.hasPrefix("==")
@@ -42,13 +45,16 @@ enum CommandSizeEstimator {
         process.executableURL = URL(fileURLWithPath: "/usr/bin/env")
         process.arguments = ["docker", "system", "df", "--format", "{{.Type}} {{.Size}}"]
         let pipe = Pipe()
+        let errPipe = Pipe()
         process.standardOutput = pipe
-        process.standardError = Pipe()
+        process.standardError = errPipe
         do {
             try process.run()
+            let outputData = pipe.fileHandleForReading.readDataToEndOfFile()
+            _ = errPipe.fileHandleForReading.readDataToEndOfFile()
             process.waitUntilExit()
             guard process.terminationStatus == 0 else { return 0 }
-            let output = String(data: pipe.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
+            let output = String(data: outputData, encoding: .utf8) ?? ""
             for line in output.split(separator: "\n") where line.lowercased().contains("build cache") {
                 return parseDockerSize(String(line.split(separator: " ").last ?? "0"))
             }

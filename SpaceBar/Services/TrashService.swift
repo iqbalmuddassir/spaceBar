@@ -169,9 +169,11 @@ enum TrashService {
         process.standardError = err
         do {
             try process.run()
+            let outData = out.fileHandleForReading.readDataToEndOfFile()
+            _ = err.fileHandleForReading.readDataToEndOfFile()
             process.waitUntilExit()
             guard process.terminationStatus == 0 else { return nil }
-            return String(data: out.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8)?
+            return String(data: outData, encoding: .utf8)?
                 .trimmingCharacters(in: .whitespacesAndNewlines)
         } catch {
             return nil
@@ -188,11 +190,13 @@ enum TrashService {
         process.standardError = err
         do {
             try process.run()
+            _ = out.fileHandleForReading.readDataToEndOfFile()
+            let errData = err.fileHandleForReading.readDataToEndOfFile()
             process.waitUntilExit()
             if process.terminationStatus == 0 {
                 return nil
             }
-            let message = String(data: err.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8)?
+            let message = String(data: errData, encoding: .utf8)?
                 .trimmingCharacters(in: .whitespacesAndNewlines)
             return message?.isEmpty == false ? message : "Failed to empty Trash"
         } catch {

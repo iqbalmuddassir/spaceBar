@@ -35,6 +35,7 @@ extension CleanTargetRegistry {
         "node-gyp-cache": .downloaded,
         "nix-eval-cache": .used,
         "bazel-repo-cache": .downloaded,
+        "bazelisk-cache": .downloaded,
         "vscode-cache": .used
     ]
 }

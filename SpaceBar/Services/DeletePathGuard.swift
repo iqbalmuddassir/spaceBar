@@ -49,56 +49,64 @@ enum DeletePathGuard {
         return forbidden.contains(path)
     }
 
+    /// Home-relative suffixes for approved cleanup locations, joined with `homePath` at check time.
+    private static let allowlistedPathSuffixes = [
+        "/Library/Caches",
+        "/Library/Developer/Xcode/DerivedData",
+        "/Library/Developer/Xcode/Archives",
+        "/Library/Developer/Xcode/iOS DeviceSupport",
+        "/.android/avd",
+        "/.gradle/caches",
+        "/.npm/_cacache",
+        "/.cache/uv",
+        "/Library/Caches/CocoaPods",
+        "/Library/Caches/org.swift.swiftpm",
+        "/Library/Caches/Homebrew",
+        "/Library/Caches/pip",
+        "/.Trash",
+        "/Library/Application Support/Claude/Cache",
+        "/Library/Application Support/Claude/Code Cache",
+        "/Library/Application Support/Claude/GPUCache",
+        "/Library/Application Support/Claude/DawnWebGPUCache",
+        "/Library/Application Support/Claude/DawnGraphiteCache",
+        "/Library/Application Support/Cursor/Cache",
+        "/Library/Application Support/Cursor/Code Cache",
+        "/Library/Application Support/Cursor/GPUCache",
+        "/Library/Application Support/Cursor/DawnGraphiteCache",
+        "/Library/Application Support/Cursor/DawnWebGPUCache",
+        "/Library/Application Support/Cursor/CachedData",
+        "/Library/Application Support/Cursor/CachedExtensionVSIXs",
+        "/Library/Application Support/Cursor/CachedProfilesData",
+        "/Library/Application Support/Cursor/CachedConfigurations",
+        "/Library/Application Support/Windsurf/Cache",
+        "/Library/Application Support/Windsurf/Code Cache",
+        "/Library/Application Support/Windsurf/GPUCache",
+        "/Library/Application Support/Windsurf/CachedData",
+        "/Library/Application Support/Windsurf/CachedExtensionVSIXs",
+        "/.continue/cache",
+        "/.codex/cache",
+        "/.cargo/registry",
+        "/go/pkg/mod",
+        "/.bun/install/cache",
+        "/.node-gyp",
+        "/Library/Caches/nix",
+        "/Library/Caches/bazel",
+        "/Library/Caches/bazelisk",
+        "/Library/Application Support/Code/Cache",
+        "/Library/Application Support/Code/Code Cache",
+        "/Library/Application Support/Code/GPUCache",
+        "/Library/Application Support/Code/CachedData",
+        "/Library/Application Support/Code/CachedExtensionVSIXs"
+    ]
+
+    /// Free-floating fragments allowed anywhere under home, for tools whose cache dir can be
+    /// fully relocated by the user (pnpm's `store-dir`, Bazelisk's `BAZELISK_HOME`).
+    private static let allowlistedPathFragments = ["pnpm", "bazelisk"]
+
     static func isAllowlistedCleanupPath(_ url: URL) -> Bool {
         let path = url.standardizedFileURL.path
         let home = homePath
-        let prefixes = [
-            home + "/Library/Caches",
-            home + "/Library/Developer/Xcode/DerivedData",
-            home + "/Library/Developer/Xcode/Archives",
-            home + "/Library/Developer/Xcode/iOS DeviceSupport",
-            home + "/.android/avd",
-            home + "/.gradle/caches",
-            home + "/.npm/_cacache",
-            home + "/.cache/uv",
-            home + "/Library/Caches/CocoaPods",
-            home + "/Library/Caches/org.swift.swiftpm",
-            home + "/Library/Caches/Homebrew",
-            home + "/Library/Caches/pip",
-            home + "/.Trash",
-            home + "/Library/Application Support/Claude/Cache",
-            home + "/Library/Application Support/Claude/Code Cache",
-            home + "/Library/Application Support/Claude/GPUCache",
-            home + "/Library/Application Support/Claude/DawnWebGPUCache",
-            home + "/Library/Application Support/Claude/DawnGraphiteCache",
-            home + "/Library/Application Support/Cursor/Cache",
-            home + "/Library/Application Support/Cursor/Code Cache",
-            home + "/Library/Application Support/Cursor/GPUCache",
-            home + "/Library/Application Support/Cursor/DawnGraphiteCache",
-            home + "/Library/Application Support/Cursor/DawnWebGPUCache",
-            home + "/Library/Application Support/Cursor/CachedData",
-            home + "/Library/Application Support/Cursor/CachedExtensionVSIXs",
-            home + "/Library/Application Support/Cursor/CachedProfilesData",
-            home + "/Library/Application Support/Cursor/CachedConfigurations",
-            home + "/Library/Application Support/Windsurf/Cache",
-            home + "/Library/Application Support/Windsurf/Code Cache",
-            home + "/Library/Application Support/Windsurf/GPUCache",
-            home + "/Library/Application Support/Windsurf/CachedData",
-            home + "/Library/Application Support/Windsurf/CachedExtensionVSIXs",
-            home + "/.continue/cache",
-            home + "/.codex/cache",
-            home + "/.cargo/registry",
-            home + "/go/pkg/mod",
-            home + "/.bun/install/cache",
-            home + "/.node-gyp",
-            home + "/Library/Caches/nix",
-            home + "/Library/Caches/bazel",
-            home + "/Library/Application Support/Code/Cache",
-            home + "/Library/Application Support/Code/Code Cache",
-            home + "/Library/Application Support/Code/GPUCache",
-            home + "/Library/Application Support/Code/CachedData",
-            home + "/Library/Application Support/Code/CachedExtensionVSIXs"
-        ]
+        let prefixes = allowlistedPathSuffixes.map { home + $0 }
         if prefixes.contains(where: { path == $0 || path.hasPrefix($0 + "/") }) {
             return true
         }
@@ -106,8 +114,9 @@ enum DeletePathGuard {
         if path == tmp || path.hasPrefix(tmp.hasSuffix("/") ? tmp : tmp + "/") {
             return true
         }
-        if path.hasPrefix(home + "/"), path.lowercased().contains("pnpm") {
-            return true
+        if path.hasPrefix(home + "/") {
+            let lowered = path.lowercased()
+            return allowlistedPathFragments.contains { lowered.contains($0) }
         }
         return false
     }

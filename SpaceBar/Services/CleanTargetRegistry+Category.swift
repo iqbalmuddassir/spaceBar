@@ -25,6 +25,7 @@ extension CleanTargetRegistry {
         "go-build-cache": .devTools,
         "nix-eval-cache": .devTools,
         "bazel-repo-cache": .devTools,
+        "bazelisk-cache": .devTools,
         "vscode-cache": .devTools,
         "claude-desktop-cache": .aiTools,
         "claude-code-cli-cache": .aiTools,

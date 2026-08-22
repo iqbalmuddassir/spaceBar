@@ -18,7 +18,8 @@ extension CleanTargetRegistry {
         "go-build",
         "Yarn",
         "nix",
-        "bazel"
+        "bazel",
+        "bazelisk"
     ]
 
     /// Dedicated reclaim rows under `~/Library/Caches` that are gated on folder existence.
@@ -69,13 +70,15 @@ extension CleanTargetRegistry {
         process.executableURL = URL(fileURLWithPath: "/usr/bin/env")
         process.arguments = ["pnpm", "store", "path"]
         let pipe = Pipe()
+        let errPipe = Pipe()
         process.standardOutput = pipe
-        process.standardError = Pipe()
+        process.standardError = errPipe
         do {
             try process.run()
+            let data = pipe.fileHandleForReading.readDataToEndOfFile()
+            _ = errPipe.fileHandleForReading.readDataToEndOfFile()
             process.waitUntilExit()
             guard process.terminationStatus == 0 else { return nil }
-            let data = pipe.fileHandleForReading.readDataToEndOfFile()
             guard let path = String(data: data, encoding: .utf8)?
                 .trimmingCharacters(in: .whitespacesAndNewlines),
                 !path.isEmpty else { return nil }
@@ -93,8 +96,8 @@ extension CleanTargetRegistry {
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/env")
         process.arguments = ["docker", "info"]
-        process.standardOutput = Pipe()
-        process.standardError = Pipe()
+        process.standardOutput = FileHandle.nullDevice
+        process.standardError = FileHandle.nullDevice
         do {
             try process.run()
             process.waitUntilExit()

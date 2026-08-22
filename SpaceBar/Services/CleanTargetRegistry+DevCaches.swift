@@ -131,8 +131,32 @@ extension CleanTargetRegistry {
             ))
         }
 
+        let bazeliskCache = bazeliskCacheURL(home: home, caches: caches)
+        if FileManager.default.fileExists(atPath: bazeliskCache.path) {
+            targets.append(CleanTarget(
+                id: "bazelisk-cache",
+                name: "Bazelisk Cache",
+                subtitle: tildePath(bazeliskCache),
+                safetyNote: "Bazelisk re-downloads the pinned Bazel release binaries as needed.",
+                strategy: .deletePaths([bazeliskCache]),
+                requiresStrongConfirm: false,
+                isPermanent: false
+            ))
+        }
+
         targets.append(contentsOf: vscodeTargets(home: home))
         return targets
+    }
+
+    /// Mirrors `uvCacheURL`: Bazelisk honors `BAZELISK_HOME` for a relocated cache dir,
+    /// falling back to its default under `~/Library/Caches/bazelisk`.
+    private static func bazeliskCacheURL(home: URL, caches: URL) -> URL {
+        let fallback = caches.appendingPathComponent("bazelisk", isDirectory: true)
+        if let env = ProcessInfo.processInfo.environment["BAZELISK_HOME"], !env.isEmpty {
+            let url = URL(fileURLWithPath: env, isDirectory: true)
+            return DeletePathGuard.constrainedToolCacheURL(url, requiredPathFragment: "bazelisk") ?? fallback
+        }
+        return fallback
     }
 
     private static func vscodeTargets(home: URL) -> [CleanTarget] {
@@ -178,13 +202,15 @@ extension CleanTargetRegistry {
         process.executableURL = URL(fileURLWithPath: "/usr/bin/env")
         process.arguments = ["go", "env", key]
         let pipe = Pipe()
+        let errPipe = Pipe()
         process.standardOutput = pipe
-        process.standardError = Pipe()
+        process.standardError = errPipe
         do {
             try process.run()
+            let data = pipe.fileHandleForReading.readDataToEndOfFile()
+            _ = errPipe.fileHandleForReading.readDataToEndOfFile()
             process.waitUntilExit()
             guard process.terminationStatus == 0 else { return nil }
-            let data = pipe.fileHandleForReading.readDataToEndOfFile()
             guard let path = String(data: data, encoding: .utf8)?
                 .trimmingCharacters(in: .whitespacesAndNewlines),
                 !path.isEmpty else { return nil }
@@ -198,8 +224,8 @@ extension CleanTargetRegistry {
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/env")
         process.arguments = [name, "version"]
-        process.standardOutput = Pipe()
-        process.standardError = Pipe()
+        process.standardOutput = FileHandle.nullDevice
+        process.standardError = FileHandle.nullDevice
         do {
             try process.run()
             process.waitUntilExit()
