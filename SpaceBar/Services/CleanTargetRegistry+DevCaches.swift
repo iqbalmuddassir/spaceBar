@@ -190,7 +190,6 @@ extension CleanTargetRegistry {
         let url = queriedGoPath(key: key) ?? fallback
         guard FileManager.default.fileExists(atPath: url.path) else { return nil }
         guard let safe = DeletePathGuard.constrainedToolCacheURL(url, requiredPathFragment: nil) else { return nil }
-        guard safe.path.lowercased().contains("go") else { return nil }
         // A customized GOMODCACHE/GOCACHE can point outside what DeletePathGuard allows deleting —
         // don't surface a row that would fail to clean when selected.
         guard (try? DeletePathGuard.validateForCleanupDelete(safe)) != nil else { return nil }

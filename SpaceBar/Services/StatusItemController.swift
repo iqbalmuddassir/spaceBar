@@ -63,10 +63,22 @@ final class StatusItemController: NSObject, ObservableObject {
 
     @objc private func togglePanel(_ sender: Any?) {
         if panel?.isVisible == true {
+            guard !shouldBlockDismiss else { return }
             closePanel()
         } else {
             openPanel()
         }
+    }
+
+    private var shouldBlockDismiss: Bool {
+        Self.shouldBlockOutsideDismiss(
+            isBatchConfirming: store.isBatchConfirming,
+            showFullDiskAccessPrompt: store.showFullDiskAccessPrompt,
+            showAutomationAccessPrompt: store.showAutomationAccessPrompt,
+            isConfirmingAnyDelete: reviewCoordinator.isConfirmingAnyDelete,
+            isDeletingAny: store.isDeletingAny || reviewCoordinator.isDeletingAny,
+            showFirstRunPrimer: store.showFirstRunPrimer
+        )
     }
 
     private func openPanel() {
@@ -120,14 +132,7 @@ final class StatusItemController: NSObject, ObservableObject {
 
     private func handleOutsideClick() {
         guard let panel, panel.isVisible else { return }
-        if Self.shouldBlockOutsideDismiss(
-            isBatchConfirming: store.isBatchConfirming,
-            showFullDiskAccessPrompt: store.showFullDiskAccessPrompt,
-            showAutomationAccessPrompt: store.showAutomationAccessPrompt,
-            isConfirmingAnyDelete: reviewCoordinator.isConfirmingAnyDelete,
-            isDeletingAny: store.isDeletingAny || reviewCoordinator.isDeletingAny,
-            showFirstRunPrimer: store.showFirstRunPrimer
-        ) {
+        if shouldBlockDismiss {
             return
         }
         let click = NSEvent.mouseLocation
@@ -143,7 +148,6 @@ final class StatusItemController: NSObject, ObservableObject {
         closePanel()
     }
 
-    /// Extracted for unit tests — panel stays open while any modal/cleanup state is active.
     static func shouldBlockOutsideDismiss(
         isBatchConfirming: Bool,
         showFullDiskAccessPrompt: Bool,

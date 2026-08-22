@@ -44,8 +44,6 @@ extension CleanupStore {
         selectedResults(staleAfter: staleAfter, now: now).reduce(0) { $0 + $1.byteSize }
     }
 
-    /// Rows left unticked by default — warm/hot, unknown age, or strong-confirm — so the footer
-    /// explains why the selected total is lower than the reclaimable figure.
     func heldBackCount(staleAfter: TimeInterval, now: Date = Date()) -> Int {
         results.filter { result in
             guard explicitSelection[result.id] == nil else { return false }

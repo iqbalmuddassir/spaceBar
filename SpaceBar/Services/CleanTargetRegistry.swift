@@ -7,15 +7,7 @@ enum CleanTargetRegistry {
         let caches = library.appendingPathComponent("Caches", isDirectory: true)
         let developer = library.appendingPathComponent("Developer/Xcode", isDirectory: true)
 
-        // Build specialty groups once so App Caches can skip their Library/Caches folders
-        // without recomputing (and re-spawning) detection shell-outs.
-        let specialtyTargets =
-            xcodeTargets(developer: developer)
-                + androidAndBuildTargets(home: home)
-                + packageManagerTargets(home: home, caches: caches)
-                + optionalToolTargets(home: home, caches: caches)
-                + devCacheTargets(home: home, caches: caches)
-                + agenticAITargets(home: home, caches: caches)
+        let specialtyTargets = specialtyTargetGroups(home: home, developer: developer, caches: caches)
         let dedicatedFolderNames = libraryCachesFolderNames(from: specialtyTargets, under: caches)
 
         var targets: [CleanTarget] = []
@@ -246,23 +238,24 @@ enum CleanTargetRegistry {
         )
     }
 
-    /// Folder names under `~/Library/Caches` that already have dedicated reclaim rows.
-    /// Used so App Caches does not double-count them. Built without calling `safeCacheChildren`
-    /// to avoid recursion through the App Caches target.
     static func dedicatedLibraryCachesFolderNames() -> Set<String> {
         let home = FileManager.default.homeDirectoryForCurrentUser
         let library = home.appendingPathComponent("Library", isDirectory: true)
         let caches = library.appendingPathComponent("Caches", isDirectory: true)
         let developer = library.appendingPathComponent("Developer/Xcode", isDirectory: true)
+        return libraryCachesFolderNames(
+            from: specialtyTargetGroups(home: home, developer: developer, caches: caches),
+            under: caches
+        )
+    }
 
-        let specialtyTargets =
-            xcodeTargets(developer: developer)
-                + androidAndBuildTargets(home: home)
-                + packageManagerTargets(home: home, caches: caches)
-                + optionalToolTargets(home: home, caches: caches)
-                + devCacheTargets(home: home, caches: caches)
-                + agenticAITargets(home: home, caches: caches)
-        return libraryCachesFolderNames(from: specialtyTargets, under: caches)
+    private static func specialtyTargetGroups(home: URL, developer: URL, caches: URL) -> [CleanTarget] {
+        xcodeTargets(developer: developer)
+            + androidAndBuildTargets(home: home)
+            + packageManagerTargets(home: home, caches: caches)
+            + optionalToolTargets(home: home, caches: caches)
+            + devCacheTargets(home: home, caches: caches)
+            + agenticAITargets(home: home, caches: caches)
     }
 
     static func libraryCachesFolderNames(from targets: [CleanTarget], under caches: URL) -> Set<String> {

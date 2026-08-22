@@ -32,20 +32,22 @@ struct RecencyLabel: View {
     let staleAfter: TimeInterval
 
     var body: some View {
-        let temperature = recency.temperature(staleAfter: staleAfter)
+        let now = Date()
+        let temperature = recency.temperature(staleAfter: staleAfter, now: now)
+        let caption = recency.caption(staleAfter: staleAfter, now: now)
         HStack(spacing: 5) {
             Circle()
                 .fill(temperature.dotColor)
                 .frame(width: 6, height: 6)
                 .accessibilityHidden(true)
-            Text(recency.caption(staleAfter: staleAfter))
+            Text(caption)
                 .lineLimit(1)
                 .truncationMode(.tail)
         }
         .font(.caption)
         .foregroundStyle(temperature.captionColor)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel(recency.caption(staleAfter: staleAfter))
+        .accessibilityLabel(caption)
         .accessibilityValue(temperature.accessibilityName)
     }
 }

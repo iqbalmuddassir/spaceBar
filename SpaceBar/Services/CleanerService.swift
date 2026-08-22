@@ -201,7 +201,7 @@ enum CleanerService {
             throw CleanerError.nothingDeleted(message)
         }
 
-        if result.bytesFreed == 0, tally.failed > tally.deleted {
+        if result.bytesFreed == 0, tally.failed >= tally.deleted {
             throw CleanerError.nothingDeleted("Files are locked or protected. Quit related apps and try again.")
         }
 
@@ -287,7 +287,8 @@ enum CleanerService {
         var isDir: ObjCBool = false
         guard fm.fileExists(atPath: url.path, isDirectory: &isDir) else { return [] }
 
-        if isDir.boolValue, shouldDeleteChildren(of: url) {
+        let isSymlink = (try? url.resourceValues(forKeys: [.isSymbolicLinkKey]))?.isSymbolicLink == true
+        if isDir.boolValue, !isSymlink, shouldDeleteChildren(of: url) {
             do {
                 return try fm.contentsOfDirectory(at: url, includingPropertiesForKeys: nil, options: [])
             } catch {

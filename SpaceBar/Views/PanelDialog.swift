@@ -65,12 +65,9 @@ struct PanelDialog<Actions: View, Details: View>: View {
         .accessibilityElement(children: .contain)
         .accessibilityAddTraits(.isModal)
         .onAppear {
-            // Skip under XCTest: AccessibilityFocusState during NSHostingView layout can trap
-            // the snapshot host (Signal 5) and block the suite on the crash prompt.
             guard ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] == nil else {
                 return
             }
-            // Defer so the overlay is in the hierarchy before VoiceOver moves focus.
             DispatchQueue.main.async {
                 isTitleFocused = true
             }
@@ -106,7 +103,6 @@ struct DialogBackdrop: View {
             .ignoresSafeArea()
             .contentShape(Rectangle())
             .onTapGesture(perform: onTap)
-            // Keep VoiceOver on the dialog, not the dimmed chrome behind it.
             .accessibilityHidden(true)
     }
 }

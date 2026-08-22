@@ -46,7 +46,6 @@ enum SnapshotFixtures {
     @MainActor
     static func settings() -> AppSettings {
         let settings = AppSettings.ephemeral()
-        // Primer would cover the panel and invalidate every cleanup snapshot.
         settings.hasSeenFirstRunPrimer = true
         return settings
     }

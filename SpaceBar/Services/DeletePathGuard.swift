@@ -46,7 +46,7 @@ enum DeletePathGuard {
             "/Applications",
             "/Users"
         ]
-        return forbidden.contains(path)
+        return forbidden.contains { $0.caseInsensitiveCompare(path) == .orderedSame }
     }
 
     /// Home-relative suffixes for approved cleanup locations, joined with `homePath` at check time.
@@ -115,10 +115,14 @@ enum DeletePathGuard {
             return true
         }
         if path.hasPrefix(home + "/") {
-            let lowered = path.lowercased()
-            return allowlistedPathFragments.contains { lowered.contains($0) }
+            return hasAllowlistedFragmentComponent(path)
         }
         return false
+    }
+
+    private static func hasAllowlistedFragmentComponent(_ path: String) -> Bool {
+        let components = URL(fileURLWithPath: path).pathComponents.map { $0.lowercased() }
+        return allowlistedPathFragments.contains { fragment in components.contains(fragment) }
     }
 
     static func validateForCleanupDelete(_ url: URL) throws {
@@ -130,6 +134,15 @@ enum DeletePathGuard {
         }
         guard isAllowlistedCleanupPath(url) else {
             throw Refusal.notAllowlisted
+        }
+        let resolved = url.resolvingSymlinksInPath()
+        if resolved.standardizedFileURL.path != url.standardizedFileURL.path {
+            guard isUnderHome(resolved) || isTempChild(resolved) else {
+                throw Refusal.outsideHome
+            }
+            if isForbiddenRoot(resolved) {
+                throw Refusal.forbiddenRoot
+            }
         }
     }
 
@@ -182,7 +195,8 @@ enum DeletePathGuard {
         let standardized = url.standardizedFileURL
         guard isUnderHome(standardized), !isForbiddenRoot(standardized) else { return nil }
         guard let fragment = requiredPathFragment?.lowercased() else { return standardized }
-        guard standardized.path.lowercased().contains(fragment) else { return nil }
+        let components = standardized.pathComponents.map { $0.lowercased() }
+        guard components.contains(fragment) else { return nil }
         return standardized
     }
 

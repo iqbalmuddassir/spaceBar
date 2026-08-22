@@ -6,7 +6,6 @@ struct BatchCleanSummary: Equatable {
     var succeeded: Int
     var failed: Int
     var bytesFreed: UInt64
-    var failedNames: [String]
 
     var statusMessage: String {
         let freed = ByteFormatting.string(from: bytesFreed)
@@ -33,7 +32,7 @@ final class CleanupStore: ObservableObject {
     @Published var isBatchConfirming = false
     @Published var isShowingSettings = false
     @Published var showFirstRunPrimer = false
-    @Published private(set) var lastBatchSummary: BatchCleanSummary?
+    @Published private(set) var excludedTargetsHideAll = false
     /// Only rows the user has actually touched. Everything else defers to the recency default,
     /// so a rescan that changes an age also changes what arrives ticked.
     @Published var explicitSelection: [String: Bool] = [:]
@@ -59,6 +58,7 @@ final class CleanupStore: ObservableObject {
     }
 
     private var scanTask: Task<Void, Never>?
+    private var scanGeneration = 0
     private var hasCompletedInitialScan = false
     private var isPinnedToFixture = false
     private var statusClearTask: Task<Void, Never>?
@@ -75,17 +75,21 @@ final class CleanupStore: ObservableObject {
             return
         }
         scanTask?.cancel()
+        scanGeneration += 1
+        let generation = scanGeneration
         isScanning = true
         scanProgress = 0
         statusMessage = "Scanning…"
-        lastBatchSummary = nil
         prepareResultsForScan(clearExisting: clearExisting)
 
-        let targets = CleanTargetRegistry.allTargets().filter { !excludedTargetIDs.contains($0.id) }
+        let allTargets = CleanTargetRegistry.allTargets()
+        excludedTargetsHideAll = !excludedTargetIDs.isEmpty
+            && allTargets.contains { excludedTargetIDs.contains($0.id) }
+        let targets = allTargets.filter { !excludedTargetIDs.contains($0.id) }
         let total = Double(max(targets.count, 1))
 
         scanTask = Task {
-            await self.runScan(targets: targets, total: total)
+            await self.runScan(targets: targets, total: total, generation: generation)
         }
     }
 
@@ -95,19 +99,17 @@ final class CleanupStore: ObservableObject {
         isBatchConfirming = false
         isShowingSettings = false
         showFirstRunPrimer = false
-        lastBatchSummary = nil
     }
 
     /// Deletes each selected target in turn, keeping the existing per-target guards and
     /// error handling rather than introducing a second delete path.
     func performBatchClean(_ targets: [CleanTarget], diskMonitor: DiskSpaceMonitor, settings: AppSettings) {
         isBatchConfirming = false
-        lastBatchSummary = nil
         Task {
             var succeeded = 0
             var failed = 0
             var bytesFreed: UInt64 = 0
-            var failedNames: [String] = []
+            var failedIDs: [String] = []
 
             for target in targets {
                 let outcome = await performDelete(target, diskMonitor: diskMonitor, settings: settings)
@@ -117,26 +119,16 @@ final class CleanupStore: ObservableObject {
                     bytesFreed += freed
                 case .failure:
                     failed += 1
-                    failedNames.append(target.name)
+                    failedIDs.append(target.id)
                 }
             }
 
-            let summary = BatchCleanSummary(
-                succeeded: succeeded,
-                failed: failed,
-                bytesFreed: bytesFreed,
-                failedNames: failedNames
-            )
-            lastBatchSummary = summary
+            let summary = BatchCleanSummary(succeeded: succeeded, failed: failed, bytesFreed: bytesFreed)
             setStatus(summary.statusMessage)
 
-            // Keep failed rows selected for retry; clear overrides so untouched rows can
-            // still auto-select later this session when they become cold enough.
             clearSelectionOverrides()
-            for name in failedNames {
-                if let id = results.first(where: { $0.target.name == name })?.id {
-                    explicitSelection[id] = true
-                }
+            for id in failedIDs {
+                explicitSelection[id] = true
             }
         }
     }
@@ -146,6 +138,7 @@ final class CleanupStore: ObservableObject {
     func loadFixture(results: [TargetScanResult], statusMessage: String? = nil) {
         isPinnedToFixture = true
         scanTask?.cancel()
+        scanGeneration += 1
         hasCompletedInitialScan = true
         isScanning = false
         scanProgress = 1
@@ -168,7 +161,7 @@ final class CleanupStore: ObservableObject {
         }
     }
 
-    private func runScan(targets: [CleanTarget], total: Double) async {
+    private func runScan(targets: [CleanTarget], total: Double, generation: Int) async {
         var collected: [String: TargetScanResult] = [:]
         var completed = 0
         var lastUIUpdate = Date.distantPast
@@ -188,7 +181,7 @@ final class CleanupStore: ObservableObject {
             }
 
             for await (id, scanned) in group {
-                if Task.isCancelled {
+                if Task.isCancelled || generation != scanGeneration {
                     group.cancelAll()
                     break
                 }
@@ -202,6 +195,8 @@ final class CleanupStore: ObservableObject {
                 }
             }
         }
+
+        guard generation == scanGeneration else { return }
 
         if Task.isCancelled {
             isScanning = false
@@ -349,16 +344,17 @@ extension CleanupStore {
         targetID: String
     ) async -> Result<UInt64, CleanerError> {
         let cleanerError = (error as? CleanerError) ?? .unknown(error.localizedDescription)
+        var hasFDA = true
         if cleanerError.isAutomationRelated {
             showAutomationAccessPrompt = true
         } else if cleanerError.isPermissionRelated {
-            let hasFDA = await Task.detached { CleanerService.hasFullDiskAccess() }.value
+            hasFDA = await Task.detached { CleanerService.hasFullDiskAccess() }.value
             if !hasFDA {
                 showFullDiskAccessPrompt = true
             }
         }
 
-        let message = await deleteFailureMessage(for: cleanerError)
+        let message = deleteFailureMessage(for: cleanerError, hasFullDiskAccess: hasFDA)
         setStatus(message)
         if let index = results.firstIndex(where: { $0.id == targetID }) {
             withAnimation {
@@ -369,15 +365,14 @@ extension CleanupStore {
         return .failure(cleanerError)
     }
 
-    private func deleteFailureMessage(for cleanerError: CleanerError) async -> String {
+    private func deleteFailureMessage(for cleanerError: CleanerError, hasFullDiskAccess: Bool) -> String {
         if cleanerError.isAutomationRelated {
             return cleanerError.localizedDescription
         }
         guard cleanerError.isPermissionRelated else {
             return cleanerError.localizedDescription
         }
-        let hasFDA = await Task.detached { CleanerService.hasFullDiskAccess() }.value
-        return hasFDA
+        return hasFullDiskAccess
             ? "Some items are locked or in use. Quit related apps and retry."
             : cleanerError.localizedDescription
     }

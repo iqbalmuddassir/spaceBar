@@ -13,7 +13,6 @@ enum LiquidGlassMotion {
             : .spring(response: 0.32, dampingFraction: 0.86)
     }
 
-    /// Content springs (meters, tiles, rows). Returns `nil` when Reduce Motion is on.
     static func content(_ reduceMotion: Bool) -> Animation? {
         reduceMotion ? nil : .spring(response: 0.4, dampingFraction: 0.85)
     }
