@@ -12,6 +12,19 @@ enum LiquidGlassMotion {
             ? .easeInOut(duration: 0.16)
             : .spring(response: 0.32, dampingFraction: 0.86)
     }
+
+    /// Content springs (meters, tiles, rows). Returns `nil` when Reduce Motion is on.
+    static func content(_ reduceMotion: Bool) -> Animation? {
+        reduceMotion ? nil : .spring(response: 0.4, dampingFraction: 0.85)
+    }
+
+    static func snappy(_ reduceMotion: Bool) -> Animation? {
+        reduceMotion ? nil : .snappy(duration: 0.25)
+    }
+
+    static func selection(_ reduceMotion: Bool) -> Animation? {
+        reduceMotion ? nil : .spring(response: 0.28, dampingFraction: 0.85)
+    }
 }
 
 enum LiquidGlassRuntime {

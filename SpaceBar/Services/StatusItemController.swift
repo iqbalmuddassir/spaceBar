@@ -53,8 +53,12 @@ final class StatusItemController: NSObject, ObservableObject {
         let image = monitor.makeMenuBarImage()
         image.isTemplate = false
         statusItem?.button?.image = image
-        statusItem?.button?.toolTip =
+        let summary =
             "\(monitor.freeSpaceLabel) free · \(monitor.freePercentLabel) remaining · \(monitor.level.label)"
+        statusItem?.button?.toolTip = summary
+        statusItem?.button?.setAccessibilityLabel("SpaceBar, \(summary)")
+        statusItem?.button?.setAccessibilityRole(.button)
+        statusItem?.button?.setAccessibilityHelp("Shows free disk space. Click to open the cleanup panel.")
     }
 
     @objc private func togglePanel(_ sender: Any?) {
@@ -116,7 +120,14 @@ final class StatusItemController: NSObject, ObservableObject {
 
     private func handleOutsideClick() {
         guard let panel, panel.isVisible else { return }
-        if store.showFullDiskAccessPrompt || store.pendingConfirmID != nil || reviewCoordinator.isConfirmingAnyDelete {
+        if Self.shouldBlockOutsideDismiss(
+            isBatchConfirming: store.isBatchConfirming,
+            showFullDiskAccessPrompt: store.showFullDiskAccessPrompt,
+            showAutomationAccessPrompt: store.showAutomationAccessPrompt,
+            isConfirmingAnyDelete: reviewCoordinator.isConfirmingAnyDelete,
+            isDeletingAny: store.isDeletingAny || reviewCoordinator.isDeletingAny,
+            showFirstRunPrimer: store.showFirstRunPrimer
+        ) {
             return
         }
         let click = NSEvent.mouseLocation
@@ -130,6 +141,23 @@ final class StatusItemController: NSObject, ObservableObject {
             }
         }
         closePanel()
+    }
+
+    /// Extracted for unit tests — panel stays open while any modal/cleanup state is active.
+    static func shouldBlockOutsideDismiss(
+        isBatchConfirming: Bool,
+        showFullDiskAccessPrompt: Bool,
+        showAutomationAccessPrompt: Bool = false,
+        isConfirmingAnyDelete: Bool,
+        isDeletingAny: Bool = false,
+        showFirstRunPrimer: Bool = false
+    ) -> Bool {
+        isBatchConfirming
+            || showFullDiskAccessPrompt
+            || showAutomationAccessPrompt
+            || isConfirmingAnyDelete
+            || isDeletingAny
+            || showFirstRunPrimer
     }
 
     private func position(panel: NSPanel, under button: NSStatusBarButton) {

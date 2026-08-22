@@ -9,6 +9,8 @@ struct CleanupPopoverView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @Namespace private var glassNamespace
+    @State private var showQuitConfirm = false
+    @State private var settingsInitialSection: PanelSettingsView.Section = .appearance
 
     var body: some View {
         ZStack {
@@ -19,11 +21,14 @@ struct CleanupPopoverView: View {
                         removal: .move(edge: .trailing).combined(with: .opacity)
                     ))
             } else if store.isShowingSettings {
-                PanelSettingsView { store.isShowingSettings = false }
-                    .transition(.asymmetric(
-                        insertion: .move(edge: .trailing).combined(with: .opacity),
-                        removal: .move(edge: .trailing).combined(with: .opacity)
-                    ))
+                PanelSettingsView(
+                    onBack: { store.isShowingSettings = false },
+                    initialSection: settingsInitialSection
+                )
+                .transition(.asymmetric(
+                    insertion: .move(edge: .trailing).combined(with: .opacity),
+                    removal: .move(edge: .trailing).combined(with: .opacity)
+                ))
             } else {
                 mainContent
                     .background {
@@ -45,12 +50,29 @@ struct CleanupPopoverView: View {
             } else {
                 store.startInitialScan()
             }
+            if !settings.hasSeenFirstRunPrimer {
+                store.showFirstRunPrimer = true
+            }
         }
         .animation(LiquidGlassMotion.panel(reduceMotion), value: reviewCoordinator.activeBrowserStore != nil)
         .animation(LiquidGlassMotion.panel(reduceMotion), value: store.isShowingSettings)
-        .animation(LiquidGlassMotion.overlay(reduceMotion), value: store.pendingConfirmID)
         .animation(LiquidGlassMotion.overlay(reduceMotion), value: store.showFullDiskAccessPrompt)
+        .animation(LiquidGlassMotion.overlay(reduceMotion), value: store.showAutomationAccessPrompt)
+        .animation(LiquidGlassMotion.overlay(reduceMotion), value: store.isBatchConfirming)
+        .animation(LiquidGlassMotion.overlay(reduceMotion), value: store.showFirstRunPrimer)
         .animation(LiquidGlassMotion.panel(reduceMotion), value: store.isScanning)
+        .confirmationDialog(
+            "Cleanup is still running. Quit anyway?",
+            isPresented: $showQuitConfirm,
+            titleVisibility: .visible
+        ) {
+            Button("Quit", role: .destructive) {
+                NSApplication.shared.terminate(nil)
+            }
+            Button("Keep Cleaning", role: .cancel) { }
+        } message: {
+            Text("Deletes already started will continue until finished.")
+        }
     }
 
     private var mainContent: some View {
@@ -67,15 +89,6 @@ struct CleanupPopoverView: View {
                 }
                 content
                 footer
-            }
-
-            if let pending = store.pendingConfirm {
-                CleanupConfirmOverlay(
-                    target: pending,
-                    onCancel: { store.cancelConfirm() },
-                    onConfirm: { store.confirmDelete(pending, diskMonitor: diskMonitor, settings: settings) }
-                )
-                .transition(.opacity.combined(with: .scale(scale: 0.96)))
             }
 
             if store.isBatchConfirming {
@@ -97,6 +110,22 @@ struct CleanupPopoverView: View {
             if store.showFullDiskAccessPrompt {
                 FullDiskAccessOverlay(isPresented: $store.showFullDiskAccessPrompt)
                     .transition(.opacity.combined(with: .scale(scale: 0.96)))
+            }
+
+            if store.showAutomationAccessPrompt {
+                AutomationAccessOverlay(isPresented: $store.showAutomationAccessPrompt)
+                    .transition(.opacity.combined(with: .scale(scale: 0.96)))
+            }
+
+            if store.showFirstRunPrimer {
+                FirstRunPrimerOverlay(
+                    isPresented: $store.showFirstRunPrimer,
+                    onContinue: {
+                        settings.hasSeenFirstRunPrimer = true
+                        store.showFirstRunPrimer = false
+                    }
+                )
+                .transition(.opacity.combined(with: .scale(scale: 0.96)))
             }
         }
     }
@@ -135,9 +164,9 @@ struct CleanupPopoverView: View {
                         .font(.body.weight(.semibold))
                         .rotationEffect(.degrees(store.isScanning ? 360 : 0))
                         .animation(
-                            store.isScanning
+                            store.isScanning && !reduceMotion
                                 ? .linear(duration: 1).repeatForever(autoreverses: false)
-                                : .default,
+                                : nil,
                             value: store.isScanning
                         )
                 }
@@ -146,9 +175,10 @@ struct CleanupPopoverView: View {
                     store.isScanning
                         || store.isDeletingAny
                         || reviewCoordinator.isDeletingAny
-                        || store.pendingConfirmID != nil
                 )
                 .help("Rescan")
+                .accessibilityLabel("Rescan cleanup targets")
+                .accessibilityHint("Scans reclaimable caches and review categories again")
             }
 
             layoutHeader
@@ -224,11 +254,7 @@ struct CleanupPopoverView: View {
                     }
 
                     if groups.isEmpty, trashItems.isEmpty, !store.isScanning {
-                        Text("No cache cleanup targets right now")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 16)
+                        emptyCleanupState
                     }
                 }
                 .padding(.vertical, 4)
@@ -236,6 +262,39 @@ struct CleanupPopoverView: View {
         }
     }
 
+    @ViewBuilder
+    private var emptyCleanupState: some View {
+        let excludedHidesTargets = !settings.excludedTargetIDs.isEmpty
+            && CleanTargetRegistry.allTargets().contains { settings.excludedTargetIDs.contains($0.id) }
+
+        VStack(spacing: 10) {
+            if excludedHidesTargets {
+                Text("All cleanup targets are hidden in Settings")
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                Text("Re-enable targets under Scanning to see reclaimable space again.")
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+                    .multilineTextAlignment(.center)
+                Button("Open Scanning settings") {
+                    settingsInitialSection = .scanning
+                    store.isShowingSettings = true
+                }
+                .liquidPillButtonStyle()
+            } else {
+                Text("No cache cleanup targets right now")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 16)
+        .padding(.horizontal, 16)
+    }
+}
+
+extension CleanupPopoverView {
     private var listHeader: some View {
         ReclaimListHeader(allSelected: allSelected) {
             store.setAllSelected(!allSelected)
@@ -253,7 +312,7 @@ struct CleanupPopoverView: View {
             title: result.target.name,
             sizeLabel: result.sizeLabel,
             recency: result.recency,
-            fallbackCaption: result.staleDescription ?? result.target.subtitle,
+            fallbackCaption: result.recencyCaption(staleAfter: settings.staleInterval) ?? result.target.subtitle,
             kindBadge: result.target.isPermanent ? "trash" : "cache",
             isSelected: store.isSelected(result, staleAfter: settings.staleInterval),
             phase: result.phase,
@@ -278,13 +337,24 @@ struct CleanupPopoverView: View {
     private var footer: some View {
         PanelFooter(
             selectedBytes: selectedBytes,
+            selectedCount: selectedResults.count,
             selectionSummary: store.selectionSummary(staleAfter: settings.staleInterval),
             statusMessage: store.statusMessage,
             isScanning: store.isScanning,
             isBusy: store.isDeletingAny || store.isScanning,
             targetCount: store.results.count,
             onClean: { store.isBatchConfirming = true },
-            onOpenSettings: { store.isShowingSettings = true }
+            onOpenSettings: {
+                settingsInitialSection = .appearance
+                store.isShowingSettings = true
+            },
+            onQuit: {
+                if store.isDeletingAny || reviewCoordinator.isDeletingAny {
+                    showQuitConfirm = true
+                } else {
+                    NSApplication.shared.terminate(nil)
+                }
+            }
         )
     }
 }

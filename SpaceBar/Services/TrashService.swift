@@ -37,14 +37,26 @@ enum TrashService {
           end if
         end tell
         """
-        if runAppleScriptReturningError(script) != nil {
+        if let scriptError = runAppleScriptReturningError(script) {
             do {
                 try emptyDirectly()
             } catch {
+                if isAutomationDenial(scriptError) {
+                    throw CleanerError.automationDenied
+                }
                 throw CleanerError.commandFailed(error.localizedDescription)
             }
             return
         }
+    }
+
+    static func isAutomationDenial(_ message: String) -> Bool {
+        let lower = message.lowercased()
+        return lower.contains("not authorized")
+            || lower.contains("-1743")
+            || lower.contains("apple event")
+            || lower.contains("not allowed to send")
+            || lower.contains("osascript is not allowed")
     }
 
     private static func finderItemCount() -> Int? {

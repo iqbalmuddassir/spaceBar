@@ -119,6 +119,8 @@ struct MapTile: View {
     let item: ReclaimMapItem
     let size: CGSize
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     private var tint: Color {
         if item.isAggregate {
             return .secondary
@@ -181,7 +183,25 @@ struct MapTile: View {
             }
         }
         .contentShape(shape)
-        .animation(.spring(response: 0.28, dampingFraction: 0.85), value: item.isSelected)
+        .animation(LiquidGlassMotion.selection(reduceMotion), value: item.isSelected)
         .help(item.isAggregate ? item.name : "\(item.name) — \(ByteFormatting.string(from: item.bytes))")
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(mapTileAccessibilityLabel)
+        .accessibilityValue(item.isSelected ? "Selected" : "Not selected")
+        .accessibilityAddTraits(.isButton)
+    }
+
+    private var mapTileAccessibilityLabel: String {
+        var parts = [item.name, ByteFormatting.string(from: item.bytes)]
+        if item.isAggregate {
+            parts.append("aggregated small items")
+        } else if item.isReview {
+            parts.append("review category")
+        } else if let temperature = item.temperature {
+            parts.append(temperature.accessibilityName)
+        } else {
+            parts.append("Age unknown")
+        }
+        return parts.joined(separator: ", ")
     }
 }

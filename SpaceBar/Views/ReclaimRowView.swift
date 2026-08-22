@@ -17,6 +17,14 @@ extension RecencyTemperature {
         case .cold: .secondary
         }
     }
+
+    var accessibilityName: String {
+        switch self {
+        case .hot: "Hot — recently touched"
+        case .warm: "Warm — somewhat recent"
+        case .cold: "Cold — safe to clean by default"
+        }
+    }
 }
 
 struct RecencyLabel: View {
@@ -29,12 +37,16 @@ struct RecencyLabel: View {
             Circle()
                 .fill(temperature.dotColor)
                 .frame(width: 6, height: 6)
+                .accessibilityHidden(true)
             Text(recency.caption(staleAfter: staleAfter))
                 .lineLimit(1)
                 .truncationMode(.tail)
         }
         .font(.caption)
         .foregroundStyle(temperature.captionColor)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(recency.caption(staleAfter: staleAfter))
+        .accessibilityValue(temperature.accessibilityName)
     }
 }
 
@@ -52,6 +64,8 @@ struct ReclaimRowView: View {
     let staleAfter: TimeInterval
     let density: RowDensity
     var onToggle: () -> Void
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private let highlightShape = RoundedRectangle(cornerRadius: 12, style: .continuous)
 
@@ -94,6 +108,7 @@ struct ReclaimRowView: View {
                     .overlay {
                         Capsule().strokeBorder(Color.primary.opacity(0.18), lineWidth: 0.8)
                     }
+                    .accessibilityHidden(true)
             }
 
             Text(sizeLabel)
@@ -101,6 +116,7 @@ struct ReclaimRowView: View {
                 .monospacedDigit()
                 .contentTransition(.numericText())
                 .frame(minWidth: 64, alignment: .trailing)
+                .accessibilityHidden(true)
         }
         .padding(.horizontal, 16)
         .padding(.vertical, density.verticalPadding)
@@ -116,9 +132,39 @@ struct ReclaimRowView: View {
             }
         }
         .opacity(phase == .deleting ? 0.72 : 1)
-        .animation(.spring(response: 0.3, dampingFraction: 0.85), value: isSelected)
-        .animation(.spring(response: 0.3, dampingFraction: 0.85), value: phase)
-        .animation(.spring(response: 0.3, dampingFraction: 0.85), value: sizeLabel)
+        .animation(rowAnimation, value: isSelected)
+        .animation(rowAnimation, value: phase)
+        .animation(rowAnimation, value: sizeLabel)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(rowAccessibilityLabel)
+        .accessibilityValue(isSelected ? "Selected" : "Not selected")
+        .accessibilityAddTraits(isSelectable ? .isButton : [])
+        .accessibilityHint(isSelectable ? "Double-tap to toggle selection" : "")
+        .accessibilityAction {
+            if isSelectable, phase != .deleting {
+                onToggle()
+            }
+        }
+    }
+
+    private var rowAnimation: Animation? {
+        reduceMotion ? nil : .spring(response: 0.3, dampingFraction: 0.85)
+    }
+
+    private var rowAccessibilityLabel: String {
+        var parts = [title, sizeLabel]
+        if let recency {
+            parts.append(recency.caption(staleAfter: staleAfter))
+        } else if let fallbackCaption {
+            parts.append(fallbackCaption)
+        }
+        if let kindBadge {
+            parts.append(kindBadge)
+        }
+        if let errorMessage {
+            parts.append(errorMessage)
+        }
+        return parts.joined(separator: ", ")
     }
 
     @ViewBuilder
@@ -128,19 +174,21 @@ struct ReclaimRowView: View {
             ProgressView()
                 .controlSize(.small)
                 .frame(width: 16)
+                .accessibilityHidden(true)
         case .success:
             Image(systemName: "checkmark.circle.fill")
                 .foregroundStyle(.green)
                 .font(.body)
                 .frame(width: 16)
-                .transition(.scale.combined(with: .opacity))
+                .transition(reduceMotion ? .opacity : .scale.combined(with: .opacity))
+                .accessibilityHidden(true)
         case .idle, .ready, .error:
             Image(systemName: isSelected ? "checkmark.square.fill" : "square")
                 .font(.system(size: 15, weight: .medium))
                 .foregroundStyle(isSelected ? Color.accentColor : Color.secondary.opacity(0.7))
                 .frame(width: 16)
                 .opacity(isSelectable ? 1 : 0.35)
-                .accessibilityLabel(isSelected ? "Selected" : "Not selected")
+                .accessibilityHidden(true)
         }
     }
 }

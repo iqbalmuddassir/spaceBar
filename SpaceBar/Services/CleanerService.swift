@@ -3,6 +3,7 @@ import Foundation
 
 enum CleanerError: LocalizedError {
     case permissionDenied
+    case automationDenied
     case commandFailed(String)
     case unknown(String)
     case nothingDeleted(String)
@@ -12,6 +13,8 @@ enum CleanerError: LocalizedError {
         switch self {
         case .permissionDenied:
             "Permission denied. Grant Full Disk Access to SpaceBar in System Settings."
+        case .automationDenied:
+            "Finder Automation is required to empty Trash. Enable SpaceBar under Privacy & Security → Automation."
         case let .commandFailed(message):
             message
         case let .unknown(message):
@@ -25,6 +28,13 @@ enum CleanerError: LocalizedError {
 
     var isPermissionRelated: Bool {
         if case .permissionDenied = self {
+            return true
+        }
+        return false
+    }
+
+    var isAutomationRelated: Bool {
+        if case .automationDenied = self {
             return true
         }
         return false
@@ -95,6 +105,19 @@ enum CleanerService {
         let urls = [
             "x-apple.systempreferences:com.apple.settings.PrivacySecurity.extension?Privacy_AllFiles",
             "x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles"
+        ]
+        for url in urls where shellOpen(url) {
+            activateSystemSettings()
+            return
+        }
+        _ = shellOpen("x-apple.systempreferences:com.apple.settings.PrivacySecurity.extension")
+        activateSystemSettings()
+    }
+
+    static func openAutomationSettings() {
+        let urls = [
+            "x-apple.systempreferences:com.apple.settings.PrivacySecurity.extension?Privacy_Automation",
+            "x-apple.systempreferences:com.apple.preference.security?Privacy_Automation"
         ]
         for url in urls where shellOpen(url) {
             activateSystemSettings()
@@ -342,7 +365,8 @@ enum CleanerService {
                 let message = String(data: errData, encoding: .utf8)?
                     .trimmingCharacters(in: .whitespacesAndNewlines)
                 throw CleanerError
-                    .commandFailed(message?.isEmpty == false ? message! : "Command failed (\(process.terminationStatus))")
+                    .commandFailed(message?
+                        .isEmpty == false ? message! : "Command failed (\(process.terminationStatus))")
             }
         } catch {
             throw CleanerError.commandFailed(error.localizedDescription)

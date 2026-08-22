@@ -28,7 +28,13 @@ SpaceBar runs as a menu-bar-only app (no Dock icon). Click the pill to open the 
 
 Project build folders are found by walking your home directory (skipping `Library`, `Pictures`, `Movies`, `Music`, `Applications`) and matching regenerable folder names against the project file that proves a tool owns them — e.g. `node_modules` next to `package.json`, `target` next to `Cargo.toml`, `.venv` containing `pyvenv.cfg`. Nothing is pre-ticked, and a delete guard re-checks every path before removing it.
 
-Some cleanups need Full Disk Access; emptying Trash needs Automation access to Finder (both prompted when needed).
+Some cleanups need Full Disk Access; emptying Trash needs Automation access to Finder. When either is missing, SpaceBar shows a guided overlay with a link to System Settings.
+
+Free space in the menu bar reflects the **startup disk** only.
+
+Build and run from source (see below). Unsigned local builds are for contributors until a notarized or Homebrew distribution exists. Release engineering steps live in [Docs/DISTRIBUTION.md](Docs/DISTRIBUTION.md).
+
+Screenshots & recordings are matched by English-style filenames (`Screenshot…`, `Screen Recording…`). Localized capture names may be missed.
 
 ## How to use
 

@@ -29,8 +29,8 @@ struct ReviewableFilesBrowserView: View {
             }
         }
         .animation(LiquidGlassMotion.overlay(reduceMotion), value: store.confirmDelete)
-        .animation(.snappy(duration: 0.25), value: store.sortOrder)
-        .animation(.snappy(duration: 0.25), value: store.kindFilter)
+        .animation(LiquidGlassMotion.snappy(reduceMotion), value: store.sortOrder)
+        .animation(LiquidGlassMotion.snappy(reduceMotion), value: store.kindFilter)
     }
 
     private var header: some View {
@@ -97,7 +97,7 @@ struct ReviewableFilesBrowserView: View {
                 .liquidPillButtonStyle()
                 .keyboardShortcut("a", modifiers: .command)
 
-                Button("Older than 30d") { store.selectOlderThan(days: 30) }
+                Button(settings.staleFilterLabel) { store.selectOlderThan(days: settings.staleDays) }
                     .disabled(store.visibleFiles.isEmpty || store.isDeleting)
                     .liquidPillButtonStyle()
 

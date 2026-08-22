@@ -85,6 +85,26 @@ final class SettingsEffectTests: XCTestCase {
         XCTAssertLessThan(settings.criticalFraction, settings.warningFraction)
     }
 
+    func testStaleDaysClampsOnAssignment() {
+        let settings = AppSettings.ephemeral()
+        settings.staleDays = 0
+        XCTAssertEqual(settings.staleDays, AppSettings.staleDayRange.lowerBound)
+        settings.staleDays = 999
+        XCTAssertEqual(settings.staleDays, AppSettings.staleDayRange.upperBound)
+    }
+
+    func testStaleDaysClampsOnLoadFromDefaults() throws {
+        let suiteName = "SpaceBar.staleClamp.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        defaults.set(0, forKey: AppSettings.Key.staleDays)
+        let low = AppSettings(defaults: defaults)
+        XCTAssertEqual(low.staleDays, AppSettings.staleDayRange.lowerBound)
+
+        defaults.set(999, forKey: AppSettings.Key.staleDays)
+        let high = AppSettings(defaults: defaults)
+        XCTAssertEqual(high.staleDays, AppSettings.staleDayRange.upperBound)
+    }
+
     func testStaleDurationDecidesWhatIsPreselected() {
         let settings = AppSettings.ephemeral()
         let result = TargetScanResult(

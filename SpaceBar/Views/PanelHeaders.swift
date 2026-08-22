@@ -8,6 +8,8 @@ struct CapacityMeter: View {
     let levelColor: Color
     var height: CGFloat = 10
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     var body: some View {
         GeometryReader { geo in
             let width = geo.size.width
@@ -23,8 +25,8 @@ struct CapacityMeter: View {
                 Rectangle()
                     .fill(Color.primary.opacity(0.10))
             }
-            .animation(.spring(response: 0.4, dampingFraction: 0.85), value: usedFraction)
-            .animation(.spring(response: 0.4, dampingFraction: 0.85), value: reclaimableFraction)
+            .animation(LiquidGlassMotion.content(reduceMotion), value: usedFraction)
+            .animation(LiquidGlassMotion.content(reduceMotion), value: reclaimableFraction)
         }
         .frame(height: height)
         .clipShape(Capsule())
@@ -91,6 +93,20 @@ struct GaugeHeader: View {
         .padding(.horizontal, 14)
         .padding(.vertical, 12)
         .liquidGlass(tint: monitor.level.color, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(gaugeAccessibilityLabel)
+    }
+
+    private var gaugeAccessibilityLabel: String {
+        var parts = [
+            "\(monitor.freeSpaceLabel) free of \(ByteFormatting.compactFreeSpace(from: monitor.totalBytes))",
+            monitor.freePercentLabel,
+            monitor.level.label
+        ]
+        if reclaimableBytes > 0 {
+            parts.append("\(ByteFormatting.string(from: reclaimableBytes)) reclaimable")
+        }
+        return parts.joined(separator: ", ")
     }
 
     private var headline: String {
@@ -135,5 +151,12 @@ struct LedgerHeader: View {
                     .monospacedDigit()
             }
         }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(
+            """
+            \(ByteFormatting.string(from: reclaimableBytes)) reclaimable across \(itemCount) items. \
+            \(monitor.freeSpaceLabel) free, \(monitor.freePercentLabel), \(monitor.level.label)
+            """
+        )
     }
 }

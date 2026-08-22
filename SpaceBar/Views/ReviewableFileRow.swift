@@ -8,6 +8,7 @@ struct ReviewableFileRow: View {
     let onReveal: () -> Void
 
     @State private var isHovering = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private static let rowShape = RoundedRectangle(cornerRadius: 10, style: .continuous)
 
@@ -34,8 +35,8 @@ struct ReviewableFileRow: View {
         .contentShape(Self.rowShape)
         .onHover { isHovering = $0 }
         .help(helpText)
-        .animation(.spring(response: 0.28, dampingFraction: 0.85), value: isSelected)
-        .animation(.easeOut(duration: 0.12), value: isHovering)
+        .animation(LiquidGlassMotion.selection(reduceMotion), value: isSelected)
+        .animation(reduceMotion ? nil : .easeOut(duration: 0.12), value: isHovering)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(accessibilityLabel)
         .accessibilityValue(isSelected ? "Marked for deletion" : "Kept")

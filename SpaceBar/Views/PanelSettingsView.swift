@@ -8,6 +8,7 @@ struct PanelSettingsView: View {
     @Environment(\.liquidGlassNamespace) private var glassNamespace
 
     let onBack: () -> Void
+    var initialSection: Section = .appearance
 
     enum Section: String, CaseIterable, Identifiable {
         case appearance
@@ -57,6 +58,9 @@ struct PanelSettingsView: View {
         }
         .background {
             PanelGlassBackground(cornerRadius: 18)
+        }
+        .onAppear {
+            section = initialSection
         }
     }
 
