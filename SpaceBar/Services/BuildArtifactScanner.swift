@@ -3,7 +3,6 @@ import Foundation
 enum BuildArtifactScanner {
     static let minimumBytes: UInt64 = 10_000_000
     static let maximumDepth = 5
-    /// Each candidate costs a `du`, so collection stops here rather than sizing the whole disk.
     static let maximumResults = 300
 
     private struct Candidate {
@@ -16,7 +15,8 @@ enum BuildArtifactScanner {
         roots: [URL]? = nil,
         minimumBytes: UInt64 = minimumBytes
     ) -> [ReviewableFile] {
-        let candidates = collectCandidates(roots: roots ?? searchRoots())
+        let resolvedRoots = roots ?? searchRoots()
+        let candidates = collectCandidates(roots: resolvedRoots)
         guard !candidates.isEmpty, !Task.isCancelled else { return [] }
         return measure(candidates)
             .filter { $0.byteSize >= minimumBytes }
@@ -30,16 +30,18 @@ enum BuildArtifactScanner {
         ]
         let children = (try? FileManager.default.contentsOfDirectory(
             at: home,
-            includingPropertiesForKeys: [.isDirectoryKey, .isSymbolicLinkKey],
+            includingPropertiesForKeys: nil,
             options: [.skipsHiddenFiles]
         )) ?? []
 
-        return children.filter { url in
-            guard let values = try? url.resourceValues(forKeys: [.isDirectoryKey, .isSymbolicLinkKey]),
-                  values.isDirectory == true, values.isSymbolicLink != true else { return false }
-            return !skipped.contains(url.lastPathComponent.lowercased())
-        }
-        .sorted { $0.lastPathComponent < $1.lastPathComponent }
+        return children
+            .filter { !skipped.contains($0.lastPathComponent.lowercased()) }
+            .filter { url in
+                guard let values = try? url.resourceValues(forKeys: [.isDirectoryKey, .isSymbolicLinkKey]),
+                      values.isDirectory == true, values.isSymbolicLink != true else { return false }
+                return true
+            }
+            .sorted { $0.lastPathComponent < $1.lastPathComponent }
     }
 
     private static func collectCandidates(roots: [URL]) -> [Candidate] {
@@ -54,7 +56,10 @@ enum BuildArtifactScanner {
             guard !children.isEmpty else { continue }
             let siblingNames = Set(children.map { $0.lastPathComponent.lowercased() })
 
-            for child in children where isTraversableDirectory(child) {
+            let traversableChildren = children.filter {
+                !isProtectedMediaBundle($0) && isTraversableDirectory($0)
+            }
+            for child in traversableChildren {
                 if let rule = matchingRule(for: child, siblingNames: siblingNames) {
                     candidates.append(Candidate(url: child, projectURL: current.url, rule: rule))
                 } else if current.depth < maximumDepth, !isSkippedBranch(child) {
@@ -69,7 +74,6 @@ enum BuildArtifactScanner {
     private static func matchingRule(for url: URL, siblingNames: Set<String>) -> BuildArtifactRule? {
         let rules = BuildArtifactRule.rule(forDirectoryNamed: url.lastPathComponent)
         guard !rules.isEmpty else { return nil }
-        // Only content-marker rules need this, and listing node_modules is not free.
         var contents: Set<String>?
         let contentNames = {
             if let contents {
@@ -85,9 +89,14 @@ enum BuildArtifactScanner {
     private static func directoryChildren(of url: URL) -> [URL] {
         (try? FileManager.default.contentsOfDirectory(
             at: url,
-            includingPropertiesForKeys: [.isDirectoryKey, .isSymbolicLinkKey],
+            includingPropertiesForKeys: nil,
             options: []
         )) ?? []
+    }
+
+    private static func isProtectedMediaBundle(_ url: URL) -> Bool {
+        let mediaExtensions: Set = ["photoslibrary", "musiclibrary", "tvlibrary"]
+        return mediaExtensions.contains(url.pathExtension.lowercased())
     }
 
     private static func isTraversableDirectory(_ url: URL) -> Bool {
@@ -97,7 +106,6 @@ enum BuildArtifactScanner {
         return values.isDirectory == true && values.isSymbolicLink != true
     }
 
-    /// Hidden folders are only skipped here — a rule matching one has already claimed it above.
     private static func isSkippedBranch(_ url: URL) -> Bool {
         let name = url.lastPathComponent
         if name.hasPrefix(".") {

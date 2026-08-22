@@ -63,41 +63,47 @@ enum ReviewableFileScanner {
         into files: inout [ReviewableFile],
         seenPaths: inout Set<String>
     ) {
-        let fileManager = FileManager.default
-        guard let enumerator = fileManager.enumerator(
-            at: directory,
-            includingPropertiesForKeys: [.isRegularFileKey, .nameKey],
-            options: [.skipsHiddenFiles, .skipsPackageDescendants]
-        ) else { return }
-
         let maxDepth = depthLimit(for: directory)
-        let rootPath = directory.standardizedFileURL.path
+        var stack: [(url: URL, depth: Int)] = [(directory, 0)]
 
-        for case let fileURL as URL in enumerator {
+        while let current = stack.popLast() {
             if Task.isCancelled {
                 return
             }
 
-            let standardized = fileURL.standardizedFileURL
-            let path = standardized.path
-            guard path == rootPath || path.hasPrefix(rootPath + "/") else {
-                enumerator.skipDescendants()
-                continue
-            }
+            let names = (try? FileManager.default.contentsOfDirectory(
+                at: current.url,
+                includingPropertiesForKeys: nil,
+                options: [.skipsHiddenFiles]
+            )) ?? []
 
-            let depth = path.replacingOccurrences(of: rootPath, with: "")
-                .split(separator: "/")
-                .count
-            if depth > maxDepth {
-                enumerator.skipDescendants()
-                continue
-            }
+            for child in names where !isProtectedMediaBundle(child) {
+                let standardized = child.standardizedFileURL
+                let path = standardized.path
+                guard seenPaths.insert(path).inserted else { continue }
 
-            guard seenPaths.insert(path).inserted else { continue }
-            guard let kind = classify(standardized), allowedKinds.contains(kind),
-                  let file = makeReviewableFile(at: standardized, kind: kind) else { continue }
-            files.append(file)
+                guard let values = try? standardized.resourceValues(forKeys: [.isRegularFileKey]) else { continue }
+                if values.isRegularFile == true {
+                    if let kind = classify(standardized), allowedKinds.contains(kind) {
+                        if let file = makeReviewableFile(at: standardized, kind: kind) {
+                            files.append(file)
+                        }
+                    }
+                } else if current.depth < maxDepth {
+                    stack.append((standardized, current.depth + 1))
+                }
+            }
         }
+    }
+
+    private static func isProtectedMediaBundle(_ url: URL) -> Bool {
+        let mediaExtensions: Set = ["photoslibrary", "musiclibrary", "tvlibrary"]
+        if mediaExtensions.contains(url.pathExtension.lowercased()) {
+            return true
+        }
+        let name = url.lastPathComponent.lowercased()
+        let parent = url.deletingLastPathComponent().lastPathComponent.lowercased()
+        return (name == "tv" && parent == "movies") || (name == "music" && parent == "music")
     }
 
     private static func makeReviewableFile(at url: URL, kind: ReviewableFileKind) -> ReviewableFile? {
