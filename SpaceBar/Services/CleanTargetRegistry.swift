@@ -7,14 +7,24 @@ enum CleanTargetRegistry {
         let caches = library.appendingPathComponent("Caches", isDirectory: true)
         let developer = library.appendingPathComponent("Developer/Xcode", isDirectory: true)
 
+        // Build specialty groups once so App Caches can skip their Library/Caches folders
+        // without recomputing (and re-spawning) detection shell-outs.
+        let specialtyTargets =
+            xcodeTargets(developer: developer)
+                + androidAndBuildTargets(home: home)
+                + packageManagerTargets(home: home, caches: caches)
+                + optionalToolTargets(home: home, caches: caches)
+                + devCacheTargets(home: home, caches: caches)
+                + agenticAITargets(home: home, caches: caches)
+        let dedicatedFolderNames = libraryCachesFolderNames(from: specialtyTargets, under: caches)
+
         var targets: [CleanTarget] = []
-        targets.append(contentsOf: generalTargets(home: home, caches: caches))
-        targets.append(contentsOf: xcodeTargets(developer: developer))
-        targets.append(contentsOf: androidAndBuildTargets(home: home))
-        targets.append(contentsOf: packageManagerTargets(home: home, caches: caches))
-        targets.append(contentsOf: optionalToolTargets(home: home, caches: caches))
-        targets.append(contentsOf: devCacheTargets(home: home, caches: caches))
-        targets.append(contentsOf: agenticAITargets(home: home, caches: caches))
+        targets.append(contentsOf: generalTargets(
+            home: home,
+            caches: caches,
+            dedicatedFolderNames: dedicatedFolderNames
+        ))
+        targets.append(contentsOf: specialtyTargets)
         targets.append(emptyTrashTarget())
         return targets.map { target in
             var copy = target
@@ -24,7 +34,11 @@ enum CleanTargetRegistry {
         }
     }
 
-    private static func generalTargets(home: URL, caches: URL) -> [CleanTarget] {
+    private static func generalTargets(
+        home: URL,
+        caches: URL,
+        dedicatedFolderNames: Set<String>
+    ) -> [CleanTarget] {
         let tmp = URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
         return [
             CleanTarget(
@@ -41,7 +55,10 @@ enum CleanTargetRegistry {
                 name: "App Caches",
                 subtitle: tildePath(caches),
                 safetyNote: "Apps rebuild caches on next launch; first launches may be slower.",
-                strategy: .deletePaths(safeCacheChildren(of: caches)),
+                strategy: .deletePaths(safeCacheChildren(
+                    of: caches,
+                    dedicatedFolderNames: dedicatedFolderNames
+                )),
                 requiresStrongConfirm: false,
                 isPermanent: false
             )
@@ -236,17 +253,20 @@ enum CleanTargetRegistry {
         let home = FileManager.default.homeDirectoryForCurrentUser
         let library = home.appendingPathComponent("Library", isDirectory: true)
         let caches = library.appendingPathComponent("Caches", isDirectory: true)
-        let cachesPath = caches.standardizedFileURL.path
         let developer = library.appendingPathComponent("Developer/Xcode", isDirectory: true)
 
-        var targets: [CleanTarget] = []
-        targets.append(contentsOf: xcodeTargets(developer: developer))
-        targets.append(contentsOf: androidAndBuildTargets(home: home))
-        targets.append(contentsOf: packageManagerTargets(home: home, caches: caches))
-        targets.append(contentsOf: optionalToolTargets(home: home, caches: caches))
-        targets.append(contentsOf: devCacheTargets(home: home, caches: caches))
-        targets.append(contentsOf: agenticAITargets(home: home, caches: caches))
+        let specialtyTargets =
+            xcodeTargets(developer: developer)
+                + androidAndBuildTargets(home: home)
+                + packageManagerTargets(home: home, caches: caches)
+                + optionalToolTargets(home: home, caches: caches)
+                + devCacheTargets(home: home, caches: caches)
+                + agenticAITargets(home: home, caches: caches)
+        return libraryCachesFolderNames(from: specialtyTargets, under: caches)
+    }
 
+    static func libraryCachesFolderNames(from targets: [CleanTarget], under caches: URL) -> Set<String> {
+        let cachesPath = caches.standardizedFileURL.path
         var names = Set<String>()
         for target in targets {
             guard case let .deletePaths(urls) = target.strategy else { continue }

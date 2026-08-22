@@ -101,13 +101,46 @@ final class SelectionSafetyTests: XCTestCase {
         XCTAssertFalse(names.contains("ollama"))
         XCTAssertFalse(names.contains("claude-cli-nodejs"))
         XCTAssertTrue(names.contains("SomeApp"))
-        XCTAssertTrue(CleanTargetRegistry.skippedCacheNames.contains("ollama"))
-        XCTAssertTrue(CleanTargetRegistry.skippedCacheNames.contains("claude-cli-nodejs"))
         let dedicated = CleanTargetRegistry.dedicatedLibraryCachesFolderNames()
-        XCTAssertTrue(dedicated.isSubset(of: CleanTargetRegistry.skippedCacheNames))
+        let skipped = CleanTargetRegistry.skippedCacheNames(dedicatedFolderNames: dedicated)
+        XCTAssertTrue(skipped.contains("ollama"))
+        XCTAssertTrue(skipped.contains("claude-cli-nodejs"))
+        XCTAssertTrue(dedicated.isSubset(of: skipped))
+        let childrenWithDedicated = CleanTargetRegistry.safeCacheChildren(
+            of: caches,
+            dedicatedFolderNames: dedicated
+        )
+        let namesWithDedicated = Set(childrenWithDedicated.map(\.lastPathComponent))
         for name in dedicated {
-            XCTAssertFalse(names.contains(name), "\(name) should be skipped from App Caches children")
+            XCTAssertFalse(namesWithDedicated.contains(name), "\(name) should be skipped from App Caches children")
         }
+    }
+
+    func testBatchCleanPinsOnlyFailedSelections() {
+        let store = CleanupStore()
+        let cold = makeResult(
+            id: "cold",
+            name: "Cold Cache",
+            recency: Recency(
+                activity: .built,
+                lastTouched: now.addingTimeInterval(-60 * RelativeAge.day)
+            )
+        )
+        let failed = makeResult(id: "failed", name: "Failed Cache", recency: nil)
+        let other = makeResult(id: "other", name: "Other Cache", recency: nil)
+        store.loadFixture(results: [cold, failed, other])
+        store.explicitSelection["cold"] = true
+        store.explicitSelection["other"] = true
+
+        store.clearSelectionOverrides()
+        store.explicitSelection[failed.id] = true
+
+        XCTAssertEqual(store.explicitSelection["failed"], true)
+        XCTAssertNil(store.explicitSelection["cold"])
+        XCTAssertNil(store.explicitSelection["other"])
+        XCTAssertTrue(store.isSelected(cold, staleAfter: staleAfter, now: now))
+        XCTAssertTrue(store.isSelected(failed, staleAfter: staleAfter, now: now))
+        XCTAssertFalse(store.isSelected(other, staleAfter: staleAfter, now: now))
     }
 
     func testTrashWithZeroBytesStillEntersSelectedResults() {

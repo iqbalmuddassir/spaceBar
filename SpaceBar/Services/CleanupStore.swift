@@ -130,17 +130,14 @@ final class CleanupStore: ObservableObject {
             lastBatchSummary = summary
             setStatus(summary.statusMessage)
 
-            // Keep failed rows selected so the user can retry; clear the rest.
-            var nextSelection: [String: Bool] = [:]
+            // Keep failed rows selected for retry; clear overrides so untouched rows can
+            // still auto-select later this session when they become cold enough.
+            clearSelectionOverrides()
             for name in failedNames {
                 if let id = results.first(where: { $0.target.name == name })?.id {
-                    nextSelection[id] = true
+                    explicitSelection[id] = true
                 }
             }
-            for result in results where nextSelection[result.id] == nil {
-                nextSelection[result.id] = false
-            }
-            explicitSelection = nextSelection
         }
     }
 

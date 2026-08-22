@@ -29,13 +29,16 @@ extension CleanTargetRegistry {
         "claude-cli-nodejs"
     ]
 
-    static var skippedCacheNames: Set<String> {
+    static func skippedCacheNames(dedicatedFolderNames: Set<String>) -> Set<String> {
         staticSkippedCacheNames
             .union(knownDedicatedLibraryCachesNames)
-            .union(dedicatedLibraryCachesFolderNames())
+            .union(dedicatedFolderNames)
     }
 
-    static func safeCacheChildren(of caches: URL) -> [URL] {
+    static func safeCacheChildren(
+        of caches: URL,
+        dedicatedFolderNames: Set<String> = []
+    ) -> [URL] {
         let fileManager = FileManager.default
         guard let children = try? fileManager.contentsOfDirectory(
             at: caches,
@@ -43,7 +46,7 @@ extension CleanTargetRegistry {
             options: [.skipsHiddenFiles]
         ) else { return [] }
 
-        let skipped = skippedCacheNames
+        let skipped = skippedCacheNames(dedicatedFolderNames: dedicatedFolderNames)
         return children.filter { url in
             let name = url.lastPathComponent
             if skipped.contains(name) {
