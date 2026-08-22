@@ -365,7 +365,8 @@ enum CleanerService {
                 let message = String(data: errData, encoding: .utf8)?
                     .trimmingCharacters(in: .whitespacesAndNewlines)
                 throw CleanerError
-                    .commandFailed(message?.isEmpty == false ? message! : "Command failed (\(process.terminationStatus))")
+                    .commandFailed(message?
+                        .isEmpty == false ? message! : "Command failed (\(process.terminationStatus))")
             }
         } catch {
             throw CleanerError.commandFailed(error.localizedDescription)
