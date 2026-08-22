@@ -62,7 +62,7 @@ enum TreemapLayout {
         into results: inout [Tile<ID>]
     ) {
         let sum = row.reduce(0) { $0 + $1.area }
-        guard sum > 0 else { return }
+        guard sum > 0, free.width > 0, free.height > 0 else { return }
 
         // Rows run along whichever edge is shorter, which is what keeps tiles square.
         let alongWidth = free.width >= free.height

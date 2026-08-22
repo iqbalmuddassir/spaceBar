@@ -19,21 +19,21 @@ enum ByteFormatting {
     static func compactFreeSpace(from bytes: UInt64) -> String {
         let value = Double(bytes)
         let asGB = value / gb
-        if asGB >= 100 {
+        if asGB >= 99.95 {
             return String(format: "%.0f GB", asGB)
         }
-        if asGB >= 10 {
+        if asGB >= 9.995 {
             return String(format: "%.1f GB", asGB)
         }
-        if asGB >= 1 {
+        if asGB >= 0.995 {
             return String(format: "%.2f GB", asGB)
         }
         let asMB = value / mb
-        if asMB >= 1 {
+        if asMB >= 0.5 {
             return String(format: "%.0f MB", asMB)
         }
         let asKB = value / kb
-        if asKB >= 1 {
+        if asKB >= 0.5 {
             return String(format: "%.0f KB", asKB)
         }
         return "\(bytes) B"

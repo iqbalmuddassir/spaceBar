@@ -38,7 +38,7 @@ final class SettingsSnapshotTests: XCTestCase {
             .frame(width: SnapshotFixtures.panelSize.width, height: SnapshotFixtures.panelSize.height)
 
         assertSnapshot(
-            of: SnapshotExport.makeHostedPanel(rootView: root),
+            of: SnapshotExport.renderedImage(from: SnapshotExport.makeHostedPanel(rootView: root)),
             as: .image(precision: 0.98, perceptualPrecision: 0.98),
             named: "panel-settings"
         )
@@ -56,7 +56,7 @@ final class SettingsSnapshotTests: XCTestCase {
             .frame(width: SnapshotFixtures.panelSize.width, alignment: .topLeading)
 
         assertSnapshot(
-            of: SnapshotExport.makeHostedPanel(rootView: root),
+            of: SnapshotExport.renderedImage(from: SnapshotExport.makeHostedPanel(rootView: root)),
             as: .image(precision: 0.98, perceptualPrecision: 0.98),
             named: name
         )

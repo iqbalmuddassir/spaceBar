@@ -165,7 +165,7 @@ final class PanelSnapshotTests: XCTestCase {
             .frame(width: SnapshotFixtures.panelSize.width, height: SnapshotFixtures.panelSize.height)
 
             assertSnapshot(
-                of: SnapshotExport.makeHostedPanel(rootView: root),
+                of: SnapshotExport.renderedImage(from: SnapshotExport.makeHostedPanel(rootView: root)),
                 as: .image(precision: 0.98, perceptualPrecision: 0.98),
                 named: "batch-clean-confirm-dialog",
                 testName: #function
@@ -182,7 +182,7 @@ final class PanelSnapshotTests: XCTestCase {
             .frame(width: SnapshotFixtures.panelSize.width, height: SnapshotFixtures.panelSize.height)
 
             assertSnapshot(
-                of: SnapshotExport.makeHostedPanel(rootView: root),
+                of: SnapshotExport.renderedImage(from: SnapshotExport.makeHostedPanel(rootView: root)),
                 as: .image(precision: 0.98, perceptualPrecision: 0.98),
                 named: "automation-access-dialog",
                 testName: #function
@@ -199,7 +199,7 @@ final class PanelSnapshotTests: XCTestCase {
             .frame(width: SnapshotFixtures.panelSize.width, height: SnapshotFixtures.panelSize.height)
 
             assertSnapshot(
-                of: SnapshotExport.makeHostedPanel(rootView: root),
+                of: SnapshotExport.renderedImage(from: SnapshotExport.makeHostedPanel(rootView: root)),
                 as: .image(precision: 0.98, perceptualPrecision: 0.98),
                 named: "full-disk-access-dialog",
                 testName: #function
@@ -210,7 +210,7 @@ final class PanelSnapshotTests: XCTestCase {
     func testMenuBarPillGood() {
         let image = SnapshotFixtures.diskMonitor(for: .good).makeMenuBarImage()
         assertSnapshot(
-            of: image,
+            of: SnapshotExport.renderedImage(from: image),
             as: .image(precision: 0.98, perceptualPrecision: 0.98),
             named: "menu-bar-pill-good"
         )
@@ -221,7 +221,7 @@ final class PanelSnapshotTests: XCTestCase {
     func testMenuBarPillLow() {
         let image = SnapshotFixtures.diskMonitor(for: .low).makeMenuBarImage()
         assertSnapshot(
-            of: image,
+            of: SnapshotExport.renderedImage(from: image),
             as: .image(precision: 0.98, perceptualPrecision: 0.98),
             named: "menu-bar-pill-low"
         )
@@ -232,7 +232,7 @@ final class PanelSnapshotTests: XCTestCase {
     func testMenuBarPillCritical() {
         let image = SnapshotFixtures.diskMonitor(for: .critical).makeMenuBarImage()
         assertSnapshot(
-            of: image,
+            of: SnapshotExport.renderedImage(from: image),
             as: .image(precision: 0.98, perceptualPrecision: 0.98),
             named: "menu-bar-pill-critical"
         )
@@ -246,7 +246,7 @@ final class PanelSnapshotTests: XCTestCase {
             settings.layout = .map
             let hosting = makeCleanupPanel(for: .good, settings: settings)
             assertSnapshot(
-                of: hosting,
+                of: SnapshotExport.renderedImage(from: hosting),
                 as: .image(precision: 0.98, perceptualPrecision: 0.98),
                 named: "cleanup-panel-map"
             )
@@ -284,7 +284,7 @@ extension PanelSnapshotTests {
         LiquidGlassRuntime.withChrome(glass) {
             let hosting = makeCleanupPanel(for: freeSpaceCase)
             assertSnapshot(
-                of: hosting,
+                of: SnapshotExport.renderedImage(from: hosting),
                 as: .image(precision: 0.98, perceptualPrecision: 0.98),
                 named: name,
                 testName: testName
@@ -311,7 +311,7 @@ extension PanelSnapshotTests {
         LiquidGlassRuntime.withChrome(glass) {
             let hosting = makeReviewBrowser(for: category)
             assertSnapshot(
-                of: hosting,
+                of: SnapshotExport.renderedImage(from: hosting),
                 as: .image(precision: 0.98, perceptualPrecision: 0.98),
                 named: name,
                 testName: testName

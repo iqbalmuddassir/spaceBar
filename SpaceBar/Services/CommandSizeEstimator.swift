@@ -69,6 +69,9 @@ enum CommandSizeEstimator {
         let numberPart = String(trimmed.prefix(while: { $0.isNumber || $0 == "." || $0 == "," }))
             .replacingOccurrences(of: ",", with: "")
         guard let value = Double(numberPart) else { return 0 }
+        if trimmed.contains("TB") {
+            return UInt64(value * 1_000_000_000_000)
+        }
         if trimmed.contains("GB") {
             return UInt64(value * 1_000_000_000)
         }

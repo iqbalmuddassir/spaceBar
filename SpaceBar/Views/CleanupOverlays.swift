@@ -186,6 +186,12 @@ struct FirstRunPrimerOverlay: View {
                 onContinue()
             }
 
+            Button("Continue", action: onContinue)
+                .keyboardShortcut(.cancelAction)
+                .opacity(0)
+                .frame(width: 0, height: 0)
+                .accessibilityHidden(true)
+
             PanelDialog(
                 symbol: "sparkles",
                 title: "Before you clean",
@@ -207,7 +213,6 @@ struct FirstRunPrimerOverlay: View {
                 }
                 DialogButton(title: "Continue", isDefault: true, action: onContinue)
                     .keyboardShortcut(.defaultAction)
-                    .keyboardShortcut(.cancelAction) // Escape also dismisses the one-time primer
             }
         }
     }

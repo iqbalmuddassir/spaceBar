@@ -1,7 +1,6 @@
 import Foundation
 
 extension CleanTargetRegistry {
-    /// Fixed skips for system / shared caches that must never appear under App Caches.
     static let staticSkippedCacheNames: Set<String> = [
         "CloudKit",
         "com.apple.Safari",
@@ -22,8 +21,6 @@ extension CleanTargetRegistry {
         "bazelisk"
     ]
 
-    /// Dedicated reclaim rows under `~/Library/Caches` that are gated on folder existence.
-    /// Listed here so App Caches still skips them when the dedicated target is not currently registered.
     static let knownDedicatedLibraryCachesNames: Set<String> = [
         "ollama",
         "claude-cli-nodejs"

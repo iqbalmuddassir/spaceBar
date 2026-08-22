@@ -264,11 +264,8 @@ struct CleanupPopoverView: View {
 
     @ViewBuilder
     private var emptyCleanupState: some View {
-        let excludedHidesTargets = !settings.excludedTargetIDs.isEmpty
-            && CleanTargetRegistry.allTargets().contains { settings.excludedTargetIDs.contains($0.id) }
-
         VStack(spacing: 10) {
-            if excludedHidesTargets {
+            if store.excludedTargetsHideAll {
                 Text("All cleanup targets are hidden in Settings")
                     .font(.caption.weight(.medium))
                     .foregroundStyle(.secondary)

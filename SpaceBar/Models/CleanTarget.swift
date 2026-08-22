@@ -37,14 +37,8 @@ struct CleanTarget: Identifiable, Equatable {
     let strategy: CleanStrategy
     let requiresStrongConfirm: Bool
     let isPermanent: Bool
-    /// Names what actually happened to this target, so the row reads "Built 20 minutes ago"
-    /// rather than the filesystem's "last modified".
     var activity: CleanupActivity = .used
     var category: CleanTargetCategory = .general
-
-    var confirmationTitle: String {
-        isPermanent ? "Empty Trash permanently?" : "Delete permanently?"
-    }
 
     var confirmationMessage: String {
         if isPermanent {
@@ -54,10 +48,6 @@ struct CleanTarget: Identifiable, Equatable {
             return "\(name) will be deleted permanently so disk space frees immediately.\n\nWarning: \(safetyNote)"
         }
         return "\(name) will be deleted permanently so disk space frees immediately.\n\n\(safetyNote)"
-    }
-
-    var confirmButtonTitle: String {
-        isPermanent ? "Empty Trash" : "Delete"
     }
 }
 
@@ -94,8 +84,6 @@ struct TargetScanResult: Identifiable, Equatable {
         recency?.temperature(staleAfter: staleAfter, now: now)
     }
 
-    /// Cold targets arrive pre-selected; anything touched more recently — or with unknown age —
-    /// is left for the user to opt into, so one-press cleanup never removes active or opaque work.
     func isSafeByDefault(staleAfter: TimeInterval, now: Date = Date()) -> Bool {
         guard !target.isPermanent else { return false }
         guard !target.requiresStrongConfirm else { return false }
@@ -103,7 +91,6 @@ struct TargetScanResult: Identifiable, Equatable {
         return temperature.isSafeByDefault
     }
 
-    /// True when age cannot be determined (CLI strategies, missing dates) — never auto-selected.
     var hasUnknownAge: Bool {
         !target.isPermanent && recency == nil
     }

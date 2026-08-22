@@ -44,6 +44,7 @@ struct ReviewableFilesBrowserView: View {
             .liquidPillButtonStyle()
             .liquidGlassEffectID(navigationGlassID, in: glassNamespace)
             .keyboardShortcut(.cancelAction)
+            .disabled(store.confirmDelete)
 
             Spacer()
 
@@ -93,7 +94,7 @@ struct ReviewableFilesBrowserView: View {
                 Button(store.areAllVisibleSelected ? "Select None" : "Select All") {
                     store.toggleSelectAll()
                 }
-                .disabled(store.visibleFiles.isEmpty || store.isDeleting)
+                .disabled(store.visibleFiles.isEmpty || store.isDeleting || store.confirmDelete)
                 .liquidPillButtonStyle()
                 .keyboardShortcut("a", modifiers: .command)
 
@@ -252,7 +253,7 @@ struct ReviewableFilesBrowserView: View {
                 store.requestDeleteSelected()
             }
             .liquidButtonStyle(prominent: true, tint: .red)
-            .disabled(store.selectedIDs.isEmpty || store.isDeleting)
+            .disabled(store.selectedIDs.isEmpty || store.isDeleting || store.confirmDelete)
             .keyboardShortcut(.delete, modifiers: .command)
         }
         .padding(.horizontal, 16)

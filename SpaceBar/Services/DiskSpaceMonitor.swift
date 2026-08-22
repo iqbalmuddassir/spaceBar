@@ -38,6 +38,7 @@ final class DiskSpaceMonitor: ObservableObject {
     private var timer: Timer?
     let settings: AppSettings
     private var settingsObserver: AnyCancellable?
+    private var screenParametersObserver: NSObjectProtocol?
     private var isPinnedToFixture = false
 
     init(settings: AppSettings) {
@@ -59,7 +60,7 @@ final class DiskSpaceMonitor: ObservableObject {
             RunLoop.main.add(timer, forMode: .common)
         }
 
-        NotificationCenter.default.addObserver(
+        screenParametersObserver = NotificationCenter.default.addObserver(
             forName: NSApplication.didChangeScreenParametersNotification,
             object: nil,
             queue: .main
@@ -72,11 +73,15 @@ final class DiskSpaceMonitor: ObservableObject {
 
     deinit {
         timer?.invalidate()
+        if let screenParametersObserver {
+            NotificationCenter.default.removeObserver(screenParametersObserver)
+        }
     }
 
     func refresh() {
         guard !isPinnedToFixture else { return }
         let stats = Self.volumeStats(at: "/")
+        guard stats.total > 0 else { return }
         apply(stats: stats)
     }
 
