@@ -41,12 +41,54 @@ extension CleanTargetRegistry {
                 isPermanent: false
             ))
         }
+
+        let crashpad = claudeApp.appendingPathComponent("Crashpad", isDirectory: true)
+        if FileManager.default.fileExists(atPath: crashpad.path) {
+            targets.append(CleanTarget(
+                id: "claude-desktop-crashpad",
+                name: "Claude Desktop Crash Reports",
+                subtitle: tildePath(crashpad),
+                safetyNote: "Only useful for debugging past crashes; Claude Desktop regenerates the folder as needed.",
+                strategy: .deletePaths([crashpad]),
+                requiresStrongConfirm: false,
+                isPermanent: false
+            ))
+        }
         return targets
     }
 
     private static func cursorTargets(appSupport: URL) -> [CleanTarget] {
         let cursorApp = appSupport.appendingPathComponent("Cursor", isDirectory: true)
         guard FileManager.default.fileExists(atPath: cursorApp.path) else { return [] }
+
+        var targets = [CleanTarget]()
+
+        let logs = cursorApp.appendingPathComponent("logs", isDirectory: true)
+        if FileManager.default.fileExists(atPath: logs.path) {
+            targets.append(CleanTarget(
+                id: "cursor-logs",
+                name: "Cursor Logs",
+                subtitle: tildePath(logs),
+                safetyNote: "Diagnostic logs only; Cursor regenerates them as needed.",
+                strategy: .deletePaths([logs]),
+                requiresStrongConfirm: false,
+                isPermanent: false
+            ))
+        }
+
+        let backups = cursorApp.appendingPathComponent("Backups", isDirectory: true)
+        if FileManager.default.fileExists(atPath: backups.path) {
+            targets.append(CleanTarget(
+                id: "cursor-backups",
+                name: "Cursor Local File Backups",
+                subtitle: tildePath(backups),
+                safetyNote: "Local backup copies of edited files kept outside your project's own version "
+                    + "control. You may still need these to recover unsaved or uncommitted changes.",
+                strategy: .deletePaths([backups]),
+                requiresStrongConfirm: true,
+                isPermanent: false
+            ))
+        }
 
         let httpCache = CleanTarget(
             id: "cursor-cache",
@@ -78,15 +120,16 @@ extension CleanTargetRegistry {
             requiresStrongConfirm: false,
             isPermanent: false
         )
-        return [httpCache, extCache]
+        targets.append(contentsOf: [httpCache, extCache])
+        return targets
     }
 
-    private static func otherAITargets(home: URL, caches: URL, appSupport: URL) -> [CleanTarget] {
-        var targets: [CleanTarget] = []
-
+    private static func windsurfTargets(appSupport: URL) -> [CleanTarget] {
         let windsurfApp = appSupport.appendingPathComponent("Windsurf", isDirectory: true)
-        if FileManager.default.fileExists(atPath: windsurfApp.path) {
-            targets.append(CleanTarget(
+        guard FileManager.default.fileExists(atPath: windsurfApp.path) else { return [] }
+
+        var targets = [
+            CleanTarget(
                 id: "windsurf-cache",
                 name: "Windsurf Cache",
                 subtitle: tildePath(windsurfApp.appendingPathComponent("Cache")),
@@ -100,8 +143,41 @@ extension CleanTargetRegistry {
                 ]),
                 requiresStrongConfirm: false,
                 isPermanent: false
+            )
+        ]
+
+        let windsurfLogs = windsurfApp.appendingPathComponent("logs", isDirectory: true)
+        if FileManager.default.fileExists(atPath: windsurfLogs.path) {
+            targets.append(CleanTarget(
+                id: "windsurf-logs",
+                name: "Windsurf Logs",
+                subtitle: tildePath(windsurfLogs),
+                safetyNote: "Diagnostic logs only; Windsurf regenerates them as needed.",
+                strategy: .deletePaths([windsurfLogs]),
+                requiresStrongConfirm: false,
+                isPermanent: false
             ))
         }
+
+        let windsurfBackups = windsurfApp.appendingPathComponent("Backups", isDirectory: true)
+        if FileManager.default.fileExists(atPath: windsurfBackups.path) {
+            targets.append(CleanTarget(
+                id: "windsurf-backups",
+                name: "Windsurf Local File Backups",
+                subtitle: tildePath(windsurfBackups),
+                safetyNote: "Local backup copies of edited files kept outside your project's own "
+                    + "version control. You may still need these to recover unsaved changes.",
+                strategy: .deletePaths([windsurfBackups]),
+                requiresStrongConfirm: true,
+                isPermanent: false
+            ))
+        }
+
+        return targets
+    }
+
+    private static func otherAITargets(home: URL, caches: URL, appSupport: URL) -> [CleanTarget] {
+        var targets: [CleanTarget] = windsurfTargets(appSupport: appSupport)
 
         let ollamaCache = caches.appendingPathComponent("ollama", isDirectory: true)
         if FileManager.default.fileExists(atPath: ollamaCache.path) {

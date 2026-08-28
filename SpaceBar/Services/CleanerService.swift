@@ -72,95 +72,75 @@ enum CleanerService {
             let after = TrashService.info().byteSize
             return CleanResult(bytesBefore: before, bytesAfter: after, deletedEntries: 1, failedEntries: 0)
         case .simctlDeleteUnavailable:
-            let before = CommandSizeEstimator.simulatorUnavailableSize()
-            try run(executable: "/usr/bin/xcrun", arguments: ["simctl", "delete", "unavailable"])
-            let after = CommandSizeEstimator.simulatorUnavailableSize()
-            return CleanResult(bytesBefore: before, bytesAfter: after, deletedEntries: 1, failedEntries: 0)
+            return try commandDrivenClean(
+                measure: CommandSizeEstimator.simulatorUnavailableSize,
+                executable: "/usr/bin/xcrun",
+                arguments: ["simctl", "delete", "unavailable"]
+            )
         case .dockerBuilderPrune:
-            let before = CommandSizeEstimator.dockerBuildCacheSize()
-            try run(executable: "/usr/bin/env", arguments: ["docker", "builder", "prune", "-f"])
-            let after = CommandSizeEstimator.dockerBuildCacheSize()
-            return CleanResult(bytesBefore: before, bytesAfter: after, deletedEntries: 1, failedEntries: 0)
+            return try commandDrivenClean(
+                measure: CommandSizeEstimator.dockerBuildCacheSize,
+                executable: "/usr/bin/env",
+                arguments: ["docker", "builder", "prune", "-f"]
+            )
+        case .dockerSystemPrune:
+            return try commandDrivenClean(
+                measure: CommandSizeEstimator.dockerReclaimableSize,
+                executable: "/usr/bin/env",
+                arguments: ["docker", "system", "prune", "-af", "--volumes"]
+            )
+        case .simctlDeleteUnusedRuntimes:
+            return try deleteUnusedSimulatorRuntimes()
+        case .timeMachineThinLocalSnapshots:
+            return try commandDrivenClean(
+                measure: CommandSizeEstimator.timeMachineLocalSnapshotSize,
+                executable: "/usr/bin/tmutil",
+                arguments: ["thinlocalsnapshots", "/", "999999999999", "4"]
+            )
         }
     }
 
-    static func hasFullDiskAccess() -> Bool {
-        let probes = [
-            FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Safari"),
-            FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Mail")
-        ]
-        for url in probes {
+    /// Shared shape for strategies that run a command and measure reclaimed space before/after.
+    private static func commandDrivenClean(
+        measure: () -> UInt64,
+        executable: String,
+        arguments: [String]
+    ) throws -> CleanResult {
+        let before = measure()
+        try run(executable: executable, arguments: arguments)
+        let after = measure()
+        return CleanResult(bytesBefore: before, bytesAfter: after, deletedEntries: 1, failedEntries: 0)
+    }
+
+    /// Deletes each stale runtime by identifier (see `unusedSimulatorRuntimes`) rather than via
+    /// `--notUsedSinceDays`.
+    private static func deleteUnusedSimulatorRuntimes() throws -> CleanResult {
+        let runtimes = CommandSizeEstimator.unusedSimulatorRuntimes()
+        guard !runtimes.isEmpty else {
+            throw CleanerError.nothingDeleted("No unused simulator runtimes to remove.")
+        }
+        let before = runtimes.reduce(0) { $0 + $1.sizeBytes }
+        var deleted = 0
+        var failedVersions: [String] = []
+        for runtime in runtimes {
             do {
-                _ = try FileManager.default.contentsOfDirectory(atPath: url.path)
-                return true
+                try run(executable: "/usr/bin/xcrun", arguments: ["simctl", "runtime", "delete", runtime.id])
+                deleted += 1
             } catch {
-                continue
+                failedVersions.append(runtime.version)
             }
         }
-        return false
-    }
-
-    static func openFullDiskAccessSettings() {
-        revealInFullDiskAccessList()
-        let urls = [
-            "x-apple.systempreferences:com.apple.settings.PrivacySecurity.extension?Privacy_AllFiles",
-            "x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles"
-        ]
-        for url in urls where shellOpen(url) {
-            activateSystemSettings()
-            return
+        guard deleted > 0 else {
+            throw CleanerError.commandFailed("Could not delete any unused simulator runtimes.")
         }
-        _ = shellOpen("x-apple.systempreferences:com.apple.settings.PrivacySecurity.extension")
-        activateSystemSettings()
-    }
-
-    static func openAutomationSettings() {
-        let urls = [
-            "x-apple.systempreferences:com.apple.settings.PrivacySecurity.extension?Privacy_Automation",
-            "x-apple.systempreferences:com.apple.preference.security?Privacy_Automation"
-        ]
-        for url in urls where shellOpen(url) {
-            activateSystemSettings()
-            return
-        }
-        _ = shellOpen("x-apple.systempreferences:com.apple.settings.PrivacySecurity.extension")
-        activateSystemSettings()
-    }
-
-    private static func revealInFullDiskAccessList() {
-        let candidates = [
-            FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Safari/Bookmarks.plist"),
-            FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Mail")
-        ]
-        for url in candidates {
-            _ = try? Data(contentsOf: url, options: [.mappedIfSafe])
-            _ = try? FileManager.default.contentsOfDirectory(atPath: url.path)
-        }
-    }
-
-    @discardableResult
-    private static func shellOpen(_ urlString: String) -> Bool {
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/usr/bin/open")
-        process.arguments = [urlString]
-        process.standardOutput = FileHandle.nullDevice
-        process.standardError = FileHandle.nullDevice
-        do {
-            try process.run()
-            process.waitUntilExit()
-            return process.terminationStatus == 0
-        } catch {
-            return false
-        }
-    }
-
-    private static func activateSystemSettings() {
-        let config = NSWorkspace.OpenConfiguration()
-        config.activates = true
-        NSWorkspace.shared.openApplication(
-            at: URL(fileURLWithPath: "/System/Applications/System Settings.app"),
-            configuration: config
-        ) { _, _ in }
+        let after = CommandSizeEstimator.simulatorUnusedRuntimeSize()
+        return CleanResult(
+            bytesBefore: before,
+            bytesAfter: after,
+            deletedEntries: deleted,
+            failedEntries: failedVersions.count,
+            failedPaths: failedVersions
+        )
     }
 
     private enum ItemOutcome {

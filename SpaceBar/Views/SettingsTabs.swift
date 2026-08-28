@@ -220,18 +220,71 @@ struct ScanningSettingsTab: View {
 struct TargetExclusionList: View {
     @EnvironmentObject private var settings: AppSettings
 
-    private var targets: [CleanTarget] {
-        CleanTargetRegistry.allTargets().filter { !$0.isPermanent }
-    }
+    private let gridColumns = [GridItem(.adaptive(minimum: 160), spacing: 6)]
+
+    /// Target discovery spawns several subprocesses (docker, go, pnpm) and does filesystem
+    /// listings, so it's computed once when the list appears rather than on every re-render —
+    /// AppSettings changes (e.g. toggling a checkbox) would otherwise re-trigger it each time.
+    @State private var targetsByCategory: [(category: CleanTargetCategory, targets: [CleanTarget])] = []
 
     var body: some View {
-        LazyVGrid(columns: [GridItem(.adaptive(minimum: 160), spacing: 6)], alignment: .leading, spacing: 6) {
-            ForEach(ReviewableFileCategory.allCases, id: \.self) { category in
-                toggle(name: category.title, id: category.settingsID)
+        VStack(alignment: .leading, spacing: 14) {
+            LazyVGrid(columns: gridColumns, alignment: .leading, spacing: 6) {
+                ForEach(ReviewableFileCategory.allCases, id: \.self) { category in
+                    toggle(name: category.title, id: category.settingsID)
+                }
             }
-            ForEach(targets) { target in
-                toggle(name: target.name, id: target.id)
+
+            ForEach(targetsByCategory, id: \.category) { group in
+                categorySection(group.category, group.targets)
             }
+        }
+        .onAppear {
+            if targetsByCategory.isEmpty {
+                targetsByCategory = Self.loadTargetsByCategory()
+            }
+        }
+    }
+
+    private static func loadTargetsByCategory() -> [(category: CleanTargetCategory, targets: [CleanTarget])] {
+        let targets = CleanTargetRegistry.allTargets().filter { !$0.isPermanent }
+        let grouped = Dictionary(grouping: targets, by: \.category)
+        return CleanTargetCategory.allCases.compactMap { category in
+            guard let items = grouped[category], !items.isEmpty else { return nil }
+            return (category, items)
+        }
+    }
+
+    private func categorySection(_ category: CleanTargetCategory, _ targets: [CleanTarget]) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Text(category.title.uppercased())
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                    .tracking(0.4)
+                Spacer()
+                Button(allEnabled(targets) ? "None" : "All") {
+                    setAll(targets, enabled: !allEnabled(targets))
+                }
+                .font(.caption2)
+                .buttonStyle(.plain)
+                .foregroundStyle(Color.accentColor)
+            }
+            LazyVGrid(columns: gridColumns, alignment: .leading, spacing: 6) {
+                ForEach(targets) { target in
+                    toggle(name: target.name, id: target.id)
+                }
+            }
+        }
+    }
+
+    private func allEnabled(_ targets: [CleanTarget]) -> Bool {
+        targets.allSatisfy { !settings.isExcluded(targetID: $0.id) }
+    }
+
+    private func setAll(_ targets: [CleanTarget], enabled: Bool) {
+        for target in targets {
+            settings.setExcluded(!enabled, targetID: target.id)
         }
     }
 

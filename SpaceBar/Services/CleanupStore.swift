@@ -335,7 +335,9 @@ extension CleanupStore {
             await diskMonitor.refreshAfterCleaning()
             return .success(cleanResult.bytesFreed)
         } catch {
-            return await handleDeleteFailure(error, targetID: target.id)
+            let result = await handleDeleteFailure(error, targetID: target.id)
+            await rescan(targetID: target.id)
+            return result
         }
     }
 
