@@ -173,14 +173,14 @@ enum ReviewableFileScanner {
     }
 
     private static func isScreenRecordingName(_ lower: String) -> Bool {
-        lower.hasPrefix("screen recording")
-            || lower.hasPrefix("screen_recording")
-            || lower.hasPrefix("screenrecording")
+        lower.contains("screen recording")
+            || lower.contains("screen_recording")
+            || lower.contains("screenrecording")
     }
 
     private static func isScreenshotName(_ lower: String) -> Bool {
-        lower.hasPrefix("screenshot")
-            || lower.hasPrefix("screen shot")
-            || lower.hasPrefix("screen_shot")
+        lower.contains("screenshot")
+            || lower.contains("screen shot")
+            || lower.contains("screen_shot")
     }
 }

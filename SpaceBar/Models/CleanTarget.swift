@@ -2,21 +2,29 @@ import Foundation
 
 enum CleanTargetCategory: String, CaseIterable {
     case general
-    case xcode
-    case mobile
-    case packageManagers
+    case xcodeDev
+    case androidDev
+    case pythonDev
+    case jsDev
+    case buildTools
     case devTools
     case aiTools
+    case system
+    case mobileDevices
     case trash
 
     var title: String {
         switch self {
         case .general: "General"
-        case .xcode: "Xcode"
-        case .mobile: "Mobile & Build Tools"
-        case .packageManagers: "Package Managers"
+        case .xcodeDev: "Xcode & iOS Simulator"
+        case .androidDev: "Android & Emulator"
+        case .pythonDev: "Python"
+        case .jsDev: "JavaScript & Node"
+        case .buildTools: "Build Tools"
         case .devTools: "Developer Tools"
         case .aiTools: "AI Tools"
+        case .system: "System"
+        case .mobileDevices: "Mobile Devices"
         case .trash: "Trash"
         }
     }
@@ -26,7 +34,10 @@ enum CleanStrategy: Equatable {
     case deletePaths([URL])
     case emptyTrash
     case simctlDeleteUnavailable
+    case simctlDeleteUnusedRuntimes
     case dockerBuilderPrune
+    case dockerSystemPrune
+    case timeMachineThinLocalSnapshots
 }
 
 struct CleanTarget: Identifiable, Equatable {

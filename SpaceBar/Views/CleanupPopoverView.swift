@@ -187,7 +187,8 @@ struct CleanupPopoverView: View {
     /// Fixed so the list reads the same every time, rather than reshuffling section order as
     /// byte totals change between scans.
     private static let categoryOrder: [CleanTargetCategory] = [
-        .general, .xcode, .mobile, .packageManagers, .devTools, .aiTools
+        .general, .xcodeDev, .androidDev, .pythonDev, .jsDev, .buildTools,
+        .devTools, .aiTools, .system, .mobileDevices
     ]
 
     private var groupedCleanupItems: [(category: CleanTargetCategory, results: [TargetScanResult])] {
@@ -301,6 +302,7 @@ extension CleanupPopoverView {
             sizeLabel: result.sizeLabel,
             recency: result.recency,
             fallbackCaption: result.recencyCaption(staleAfter: settings.staleInterval) ?? result.target.subtitle,
+            path: result.target.subtitle,
             kindBadge: result.target.isPermanent ? "trash" : "cache",
             isSelected: store.isSelected(result, staleAfter: settings.staleInterval),
             phase: result.phase,

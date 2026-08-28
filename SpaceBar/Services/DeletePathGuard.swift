@@ -56,6 +56,8 @@ enum DeletePathGuard {
         "/Library/Developer/Xcode/Archives",
         "/Library/Developer/Xcode/iOS DeviceSupport",
         "/.android/avd",
+        "/.android/cache",
+        "/java_error_in_studio.hprof",
         "/.gradle/caches",
         "/.npm/_cacache",
         "/.cache/uv",
@@ -96,12 +98,51 @@ enum DeletePathGuard {
         "/Library/Application Support/Code/Code Cache",
         "/Library/Application Support/Code/GPUCache",
         "/Library/Application Support/Code/CachedData",
-        "/Library/Application Support/Code/CachedExtensionVSIXs"
+        "/Library/Application Support/Code/CachedExtensionVSIXs",
+        "/Library/Application Support/Code/logs",
+        "/Library/Application Support/Code/Backups",
+        "/Library/Application Support/Claude/Crashpad",
+        "/Library/Application Support/Cursor/logs",
+        "/Library/Application Support/Cursor/Backups",
+        "/Library/Application Support/Windsurf/logs",
+        "/Library/Application Support/Windsurf/Backups",
+        "/Library/Application Support/MobileSync/Backup",
+        "/Library/Logs/DiagnosticReports",
+        "/Library/Logs/CrashReporter",
+        "/Library/Developer/CoreSimulator/Caches",
+        "/Library/Caches/pypoetry",
+        "/Library/Caches/composer",
+        "/.composer/cache",
+        "/.rustup/downloads",
+        "/miniconda3/pkgs",
+        "/miniconda/pkgs",
+        "/anaconda3/pkgs",
+        "/miniforge3/pkgs",
+        "/mambaforge/pkgs"
     ]
 
     /// Free-floating fragments allowed anywhere under home, for tools whose cache dir can be
     /// fully relocated by the user (pnpm's `store-dir`, Bazelisk's `BAZELISK_HOME`).
     private static let allowlistedPathFragments = ["pnpm", "bazelisk"]
+
+    /// Versioned folders discovered by listing rather than a fixed path (e.g. Android Studio's
+    /// `AndroidStudio2024.1`). `allowedGrandchildren`, when set, restricts deletion to named
+    /// subfolders inside the versioned folder instead of the folder itself — needed for
+    /// `~/Library/Caches/Google/AndroidStudio*`, which is live IDE state, not a plain cache.
+    private struct VersionedChildRule {
+        let parent: String
+        let prefix: String
+        let allowedGrandchildren: [String]?
+    }
+
+    private static let allowlistedVersionedChildren: [VersionedChildRule] = [
+        VersionedChildRule(parent: "/Library/Logs", prefix: "AndroidStudio", allowedGrandchildren: nil),
+        VersionedChildRule(
+            parent: "/Library/Caches/Google",
+            prefix: "AndroidStudio",
+            allowedGrandchildren: ["captures", "heapdumps"]
+        )
+    ]
 
     static func isAllowlistedCleanupPath(_ url: URL) -> Bool {
         let path = url.standardizedFileURL.path
@@ -114,10 +155,31 @@ enum DeletePathGuard {
         if path == tmp || path.hasPrefix(tmp.hasSuffix("/") ? tmp : tmp + "/") {
             return true
         }
+        if isAllowlistedVersionedChild(path) {
+            return true
+        }
         if path.hasPrefix(home + "/") {
             return hasAllowlistedFragmentComponent(path)
         }
         return false
+    }
+
+    private static func isAllowlistedVersionedChild(_ path: String) -> Bool {
+        let home = homePath
+        let url = URL(fileURLWithPath: path)
+        return allowlistedVersionedChildren.contains { entry in
+            let expectedParent = home + entry.parent
+            guard let allowedGrandchildren = entry.allowedGrandchildren else {
+                let parentPath = url.deletingLastPathComponent().path
+                let name = url.lastPathComponent.lowercased()
+                return parentPath == expectedParent && name.hasPrefix(entry.prefix.lowercased())
+            }
+            let versionedDir = url.deletingLastPathComponent()
+            let grandchildName = url.lastPathComponent.lowercased()
+            guard allowedGrandchildren.map({ $0.lowercased() }).contains(grandchildName) else { return false }
+            guard versionedDir.deletingLastPathComponent().path == expectedParent else { return false }
+            return versionedDir.lastPathComponent.lowercased().hasPrefix(entry.prefix.lowercased())
+        }
     }
 
     private static func hasAllowlistedFragmentComponent(_ path: String) -> Bool {

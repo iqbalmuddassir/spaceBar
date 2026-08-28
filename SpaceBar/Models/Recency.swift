@@ -10,6 +10,7 @@ enum CleanupActivity: String, Equatable, CaseIterable {
     case booted
     case installed
     case trashed
+    case backedUp
 
     var verb: String {
         switch self {
@@ -22,6 +23,7 @@ enum CleanupActivity: String, Equatable, CaseIterable {
         case .booted: "Booted"
         case .installed: "Installed"
         case .trashed: "Newest item trashed"
+        case .backedUp: "Backed up"
         }
     }
 
@@ -36,6 +38,7 @@ enum CleanupActivity: String, Equatable, CaseIterable {
         case .booted: "simulator still in use"
         case .installed: "just installed"
         case .trashed: "added today"
+        case .backedUp: "you may still need this to restore a device"
         }
     }
 }

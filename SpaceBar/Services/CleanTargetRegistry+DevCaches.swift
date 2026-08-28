@@ -145,7 +145,83 @@ extension CleanTargetRegistry {
         }
 
         targets.append(contentsOf: vscodeTargets(home: home))
+        targets.append(contentsOf: poetryAndComposerTargets(home: home, caches: caches))
+        targets.append(contentsOf: rustupTargets(home: home))
+        targets.append(contentsOf: condaTargets(home: home))
         return targets
+    }
+
+    private static func poetryAndComposerTargets(home: URL, caches: URL) -> [CleanTarget] {
+        var targets: [CleanTarget] = []
+
+        let poetryCache = caches.appendingPathComponent("pypoetry", isDirectory: true)
+        if FileManager.default.fileExists(atPath: poetryCache.path) {
+            targets.append(CleanTarget(
+                id: "poetry-cache",
+                name: "Poetry Cache",
+                subtitle: tildePath(poetryCache),
+                safetyNote: "Poetry re-downloads packages and re-populates its cache as needed.",
+                strategy: .deletePaths([poetryCache]),
+                requiresStrongConfirm: false,
+                isPermanent: false
+            ))
+        }
+
+        let composerCandidates = [
+            caches.appendingPathComponent("composer", isDirectory: true),
+            home.appendingPathComponent(".composer/cache", isDirectory: true)
+        ]
+        if let composerCache = composerCandidates.first(where: { FileManager.default.fileExists(atPath: $0.path) }) {
+            targets.append(CleanTarget(
+                id: "composer-cache",
+                name: "Composer Cache",
+                subtitle: tildePath(composerCache),
+                safetyNote: "Composer re-downloads PHP packages into its cache as needed.",
+                strategy: .deletePaths([composerCache]),
+                requiresStrongConfirm: false,
+                isPermanent: false
+            ))
+        }
+
+        return targets
+    }
+
+    private static func rustupTargets(home: URL) -> [CleanTarget] {
+        let downloads = home.appendingPathComponent(".rustup/downloads", isDirectory: true)
+        guard FileManager.default.fileExists(atPath: downloads.path) else { return [] }
+        return [
+            CleanTarget(
+                id: "rustup-downloads-cache",
+                name: "rustup Download Cache",
+                subtitle: tildePath(downloads),
+                safetyNote: "Only the staged download cache — installed toolchains under ~/.rustup/toolchains "
+                    + "are left alone. rustup re-downloads as needed.",
+                strategy: .deletePaths([downloads]),
+                requiresStrongConfirm: false,
+                isPermanent: false
+            )
+        ]
+    }
+
+    /// Only the shared `pkgs` cache — active environments under `envs/` are never touched.
+    private static func condaTargets(home: URL) -> [CleanTarget] {
+        let candidates = ["miniconda3", "miniconda", "anaconda3", "miniforge3", "mambaforge"]
+            .map { home.appendingPathComponent("\($0)/pkgs", isDirectory: true) }
+        guard let pkgsCache = candidates.first(where: { FileManager.default.fileExists(atPath: $0.path) }) else {
+            return []
+        }
+        return [
+            CleanTarget(
+                id: "conda-pkgs-cache",
+                name: "Conda Package Cache",
+                subtitle: tildePath(pkgsCache),
+                safetyNote: "conda/mamba re-downloads packages into this cache as needed. Your environments "
+                    + "under envs/ are not touched.",
+                strategy: .deletePaths([pkgsCache]),
+                requiresStrongConfirm: false,
+                isPermanent: false
+            )
+        ]
     }
 
     /// Mirrors `uvCacheURL`: Bazelisk honors `BAZELISK_HOME` for a relocated cache dir,
@@ -163,7 +239,7 @@ extension CleanTargetRegistry {
         let vscodeApp = home.appendingPathComponent("Library/Application Support/Code", isDirectory: true)
         guard FileManager.default.fileExists(atPath: vscodeApp.path) else { return [] }
 
-        return [
+        var targets = [
             CleanTarget(
                 id: "vscode-cache",
                 name: "VS Code Cache",
@@ -180,6 +256,35 @@ extension CleanTargetRegistry {
                 isPermanent: false
             )
         ]
+
+        let logs = vscodeApp.appendingPathComponent("logs", isDirectory: true)
+        if FileManager.default.fileExists(atPath: logs.path) {
+            targets.append(CleanTarget(
+                id: "vscode-logs",
+                name: "VS Code Logs",
+                subtitle: tildePath(logs),
+                safetyNote: "Diagnostic logs only; VS Code regenerates them as needed.",
+                strategy: .deletePaths([logs]),
+                requiresStrongConfirm: false,
+                isPermanent: false
+            ))
+        }
+
+        let backups = vscodeApp.appendingPathComponent("Backups", isDirectory: true)
+        if FileManager.default.fileExists(atPath: backups.path) {
+            targets.append(CleanTarget(
+                id: "vscode-backups",
+                name: "VS Code Local File Backups",
+                subtitle: tildePath(backups),
+                safetyNote: "Local backup copies of edited files kept outside your project's own "
+                    + "version control. You may still need these to recover unsaved changes.",
+                strategy: .deletePaths([backups]),
+                requiresStrongConfirm: true,
+                isPermanent: false
+            ))
+        }
+
+        return targets
     }
 
     /// Mirrors `detectPnpmStore()`: ask the tool for its real cache directory rather than

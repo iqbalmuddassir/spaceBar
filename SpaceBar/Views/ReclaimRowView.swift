@@ -58,6 +58,7 @@ struct ReclaimRowView: View {
     let sizeLabel: String
     var recency: Recency?
     var fallbackCaption: String?
+    var path: String?
     var kindBadge: String?
     var isSelected: Bool
     var isSelectable: Bool = true
@@ -88,6 +89,15 @@ struct ReclaimRowView: View {
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
                         .truncationMode(.middle)
+                }
+
+                if let path, !path.isEmpty {
+                    Text(path)
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                        .help(path)
                 }
 
                 if let errorMessage {
@@ -159,6 +169,9 @@ struct ReclaimRowView: View {
             parts.append(recency.caption(staleAfter: staleAfter))
         } else if let fallbackCaption {
             parts.append(fallbackCaption)
+        }
+        if let path, !path.isEmpty {
+            parts.append(path)
         }
         if let kindBadge {
             parts.append(kindBadge)

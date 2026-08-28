@@ -36,6 +36,26 @@ extension CleanTargetRegistry {
         "nix-eval-cache": .used,
         "bazel-repo-cache": .downloaded,
         "bazelisk-cache": .downloaded,
-        "vscode-cache": .used
+        "vscode-cache": .used,
+        "poetry-cache": .downloaded,
+        "composer-cache": .downloaded,
+        "rustup-downloads-cache": .downloaded,
+        "conda-pkgs-cache": .downloaded,
+        "tm-local-snapshots": .recorded,
+        "diagnostic-reports": .recorded,
+        "mobilesync-backups": .backedUp,
+        "simctl-unused-runtimes": .used,
+        "docker-system-prune": .used,
+        "android-studio-logs": .used,
+        "android-studio-captures": .captured,
+        "android-studio-oom-heap-dump": .captured,
+        "android-emulator-cache": .used,
+        "claude-desktop-crashpad": .recorded,
+        "cursor-logs": .used,
+        "cursor-backups": .backedUp,
+        "windsurf-logs": .used,
+        "windsurf-backups": .backedUp,
+        "vscode-logs": .used,
+        "vscode-backups": .backedUp
     ]
 }

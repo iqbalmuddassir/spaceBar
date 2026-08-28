@@ -7,7 +7,13 @@ enum CleanTargetRegistry {
         let caches = library.appendingPathComponent("Caches", isDirectory: true)
         let developer = library.appendingPathComponent("Developer/Xcode", isDirectory: true)
 
-        let specialtyTargets = specialtyTargetGroups(home: home, developer: developer, caches: caches)
+        let dockerIsAvailable = dockerAvailable()
+        let specialtyTargets = specialtyTargetGroups(
+            home: home,
+            developer: developer,
+            caches: caches,
+            dockerIsAvailable: dockerIsAvailable
+        )
         let dedicatedFolderNames = libraryCachesFolderNames(from: specialtyTargets, under: caches)
 
         var targets: [CleanTarget] = []
@@ -176,7 +182,7 @@ enum CleanTargetRegistry {
         return targets
     }
 
-    private static func optionalToolTargets(home: URL, caches: URL) -> [CleanTarget] {
+    private static func optionalToolTargets(home: URL, caches: URL, dockerIsAvailable: Bool) -> [CleanTarget] {
         let brew = caches.appendingPathComponent("Homebrew", isDirectory: true)
         let uvCache = uvCacheURL(home: home)
         let pip = caches.appendingPathComponent("pip", isDirectory: true)
@@ -210,7 +216,7 @@ enum CleanTargetRegistry {
             )
         ]
 
-        if dockerAvailable() {
+        if dockerIsAvailable {
             targets.append(
                 CleanTarget(
                     id: "docker-builder",
@@ -244,18 +250,27 @@ enum CleanTargetRegistry {
         let caches = library.appendingPathComponent("Caches", isDirectory: true)
         let developer = library.appendingPathComponent("Developer/Xcode", isDirectory: true)
         return libraryCachesFolderNames(
-            from: specialtyTargetGroups(home: home, developer: developer, caches: caches),
+            // Neither Docker strategy stores a deletable path under ~/Library/Caches, so this
+            // derivation is unaffected by Docker's actual availability.
+            from: specialtyTargetGroups(home: home, developer: developer, caches: caches, dockerIsAvailable: false),
             under: caches
         )
     }
 
-    private static func specialtyTargetGroups(home: URL, developer: URL, caches: URL) -> [CleanTarget] {
+    private static func specialtyTargetGroups(
+        home: URL,
+        developer: URL,
+        caches: URL,
+        dockerIsAvailable: Bool
+    ) -> [CleanTarget] {
         xcodeTargets(developer: developer)
             + androidAndBuildTargets(home: home)
             + packageManagerTargets(home: home, caches: caches)
-            + optionalToolTargets(home: home, caches: caches)
+            + optionalToolTargets(home: home, caches: caches, dockerIsAvailable: dockerIsAvailable)
             + devCacheTargets(home: home, caches: caches)
             + agenticAITargets(home: home, caches: caches)
+            + systemCleanupTargets(home: home, developer: developer, dockerIsAvailable: dockerIsAvailable)
+            + androidStudioTargets(home: home)
     }
 
     static func libraryCachesFolderNames(from targets: [CleanTarget], under caches: URL) -> Set<String> {
