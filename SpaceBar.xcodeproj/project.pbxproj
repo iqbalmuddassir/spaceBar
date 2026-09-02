@@ -47,6 +47,7 @@
 		A27CA3070A3E5782DE5B2452 /* CleanTargetRegistry+Activity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FA9ED6F02E0B8C044815E81 /* CleanTargetRegistry+Activity.swift */; };
 		A5B28D91F1F470CAF2161EBC /* SettingsSnapshotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7359A4227890E035D83983DA /* SettingsSnapshotTests.swift */; };
 		AB3A733F91A3DA9BAEB1066F /* ByteFormatting.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2119658F7ECAC1DA45690B39 /* ByteFormatting.swift */; };
+		B06F76AA6A533C4D60739190 /* CleanTargetRegistry+XcodeCaches.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B0D5DF310D255472C8DFD43 /* CleanTargetRegistry+XcodeCaches.swift */; };
 		B1F0A97E8775932B0E3DEFE9 /* BuildArtifactScannerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3A6122BC6CD67FC72216AFC /* BuildArtifactScannerTests.swift */; };
 		B3DCA81A1A582DDEFC62563C /* SettingsSections.swift in Sources */ = {isa = PBXBuildFile; fileRef = B73C8C05AC7B0BBBE29836E3 /* SettingsSections.swift */; };
 		B81D3E282683F9D85AEEF83A /* BuildArtifactRule.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBD5AAE2E468F12FFCE0D42D /* BuildArtifactRule.swift */; };
@@ -85,6 +86,7 @@
 		0BEAEDF1F4739EE495179136 /* CleanupOverlays.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CleanupOverlays.swift; sourceTree = "<group>"; };
 		15945E7F8C025E47046AB918 /* StatusItemController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusItemController.swift; sourceTree = "<group>"; };
 		1701EC73DE2451B902EE9023 /* MapHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapHeader.swift; sourceTree = "<group>"; };
+		1B0D5DF310D255472C8DFD43 /* CleanTargetRegistry+XcodeCaches.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CleanTargetRegistry+XcodeCaches.swift"; sourceTree = "<group>"; };
 		1CB68FF59F6A97AA04658562 /* DirectorySizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DirectorySizer.swift; sourceTree = "<group>"; };
 		1ECDA0093D14639036129F2D /* ThumbnailLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThumbnailLoader.swift; sourceTree = "<group>"; };
 		2119658F7ECAC1DA45690B39 /* ByteFormatting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ByteFormatting.swift; sourceTree = "<group>"; };
@@ -181,6 +183,7 @@
 				6B350344D017C1292D7BE8AF /* CleanTargetRegistry+Detection.swift */,
 				4952CD4F1BCA0558AF42DF71 /* CleanTargetRegistry+DevCaches.swift */,
 				DD6CAB50A2D1318DF14FF4B5 /* CleanTargetRegistry+SystemCleanup.swift */,
+				1B0D5DF310D255472C8DFD43 /* CleanTargetRegistry+XcodeCaches.swift */,
 				92E96DFFDDAEA8F264E42347 /* CleanupStore.swift */,
 				B27C4D829A5C5587E45733BB /* CleanupStore+Scan.swift */,
 				C7D335FA3D58AC8112CE9F62 /* CleanupStore+Selection.swift */,
@@ -439,6 +442,7 @@
 				BD9A7C39B233AECCAE1877DE /* CleanTargetRegistry+Detection.swift in Sources */,
 				C31595DFC534301E3F4A7FFE /* CleanTargetRegistry+DevCaches.swift in Sources */,
 				3D6FCAC2DFC01D67E0E2453D /* CleanTargetRegistry+SystemCleanup.swift in Sources */,
+				B06F76AA6A533C4D60739190 /* CleanTargetRegistry+XcodeCaches.swift in Sources */,
 				5D964EB8DB065E7877D9B8C8 /* CleanTargetRegistry.swift in Sources */,
 				57ADD4538B1FEA4D256D9431 /* CleanerService+SystemSettings.swift in Sources */,
 				C481854918E82E7DE6EACBA7 /* CleanerService.swift in Sources */,
