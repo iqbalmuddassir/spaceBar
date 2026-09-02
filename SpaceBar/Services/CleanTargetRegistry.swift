@@ -104,7 +104,7 @@ enum CleanTargetRegistry {
                 requiresStrongConfirm: false,
                 isPermanent: false
             )
-        ]
+        ] + xcodeCacheTargets(developer: developer)
     }
 
     private static func androidAndBuildTargets(home: URL) -> [CleanTarget] {
