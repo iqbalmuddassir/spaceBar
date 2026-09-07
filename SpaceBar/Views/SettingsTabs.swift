@@ -219,6 +219,7 @@ struct ScanningSettingsTab: View {
 
 struct TargetExclusionList: View {
     @EnvironmentObject private var settings: AppSettings
+    @Environment(\.cleanTargetCatalog) private var cleanTargetCatalog
 
     private let gridColumns = [GridItem(.adaptive(minimum: 160), spacing: 6)]
 
@@ -241,13 +242,13 @@ struct TargetExclusionList: View {
         }
         .onAppear {
             if targetsByCategory.isEmpty {
-                targetsByCategory = Self.loadTargetsByCategory()
+                targetsByCategory = loadTargetsByCategory()
             }
         }
     }
 
-    private static func loadTargetsByCategory() -> [(category: CleanTargetCategory, targets: [CleanTarget])] {
-        let targets = CleanTargetRegistry.allTargets().filter { !$0.isPermanent }
+    private func loadTargetsByCategory() -> [(category: CleanTargetCategory, targets: [CleanTarget])] {
+        let targets = cleanTargetCatalog().filter { !$0.isPermanent }
         let grouped = Dictionary(grouping: targets, by: \.category)
         return CleanTargetCategory.allCases.compactMap { category in
             guard let items = grouped[category], !items.isEmpty else { return nil }
@@ -298,5 +299,18 @@ struct TargetExclusionList: View {
         )
         .font(.caption)
         .lineLimit(1)
+    }
+}
+
+/// Discovery probes the machine (docker, go, pnpm, filesystem listings), so the catalog is an
+/// injection point: snapshots supply a fixed list instead of whatever is installed on the host.
+struct CleanTargetCatalogKey: EnvironmentKey {
+    static let defaultValue: () -> [CleanTarget] = { CleanTargetRegistry.allTargets() }
+}
+
+extension EnvironmentValues {
+    var cleanTargetCatalog: () -> [CleanTarget] {
+        get { self[CleanTargetCatalogKey.self] }
+        set { self[CleanTargetCatalogKey.self] = newValue }
     }
 }

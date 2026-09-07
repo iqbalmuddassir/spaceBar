@@ -51,14 +51,11 @@ struct CleanTarget: Identifiable, Equatable {
     var activity: CleanupActivity = .used
     var category: CleanTargetCategory = .general
 
-    var confirmationMessage: String {
+    var batchConfirmationWarning: String {
         if isPermanent {
-            return "This permanently deletes everything in Trash and cannot be undone.\n\n\(safetyNote)"
+            return "\(name): cannot be undone. \(safetyNote)"
         }
-        if requiresStrongConfirm {
-            return "\(name) will be deleted permanently so disk space frees immediately.\n\nWarning: \(safetyNote)"
-        }
-        return "\(name) will be deleted permanently so disk space frees immediately.\n\n\(safetyNote)"
+        return "\(name): \(safetyNote)"
     }
 }
 

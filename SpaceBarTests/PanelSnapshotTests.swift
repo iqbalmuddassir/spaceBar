@@ -173,6 +173,44 @@ final class PanelSnapshotTests: XCTestCase {
         }
     }
 
+    func testBatchCleanConfirmDialogManyTargets() {
+        LiquidGlassRuntime.withChrome(false) {
+            let results = (0 ..< 15).map { index -> TargetScanResult in
+                let target = CleanTarget(
+                    id: "target-\(index)",
+                    name: "Cleanable Target \(index)",
+                    subtitle: "~/Library/Caches/target-\(index)",
+                    safetyNote: "These are archived builds. Only remove ones you no longer need.",
+                    strategy: .deletePaths([]),
+                    requiresStrongConfirm: index % 5 == 0,
+                    isPermanent: index == 14
+                )
+                return TargetScanResult(
+                    target: target,
+                    byteSize: UInt64(index + 1) * 400_000_000,
+                    phase: .ready
+                )
+            }
+            let root = ZStack {
+                Color(nsColor: .windowBackgroundColor)
+                BatchCleanConfirmOverlay(
+                    targets: results,
+                    totalBytes: results.reduce(0) { $0 + $1.byteSize },
+                    onCancel: { },
+                    onConfirm: { }
+                )
+            }
+            .frame(width: SnapshotFixtures.panelSize.width, height: SnapshotFixtures.panelSize.height)
+
+            assertSnapshot(
+                of: SnapshotExport.renderedImage(from: SnapshotExport.makeHostedPanel(rootView: root)),
+                as: .image(precision: 0.98, perceptualPrecision: 0.98),
+                named: "batch-clean-confirm-dialog-many",
+                testName: #function
+            )
+        }
+    }
+
     func testAutomationAccessDialog() {
         LiquidGlassRuntime.withChrome(false) {
             let root = ZStack {

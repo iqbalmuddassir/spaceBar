@@ -1,5 +1,7 @@
 import SwiftUI
 
+private let dialogMaxContentHeight: CGFloat = 380
+
 struct PanelDialog<Actions: View, Details: View>: View {
     let symbol: String
     var tint: Color = .accentColor
@@ -9,39 +11,57 @@ struct PanelDialog<Actions: View, Details: View>: View {
     @ViewBuilder var actions: () -> Actions
 
     @AccessibilityFocusState private var isTitleFocused: Bool
+    @State private var contentHeight: CGFloat = 0
 
     var body: some View {
         VStack(spacing: 0) {
-            VStack(spacing: 10) {
-                ZStack {
-                    Circle()
-                        .fill(tint.opacity(0.15))
-                        .frame(width: 46, height: 46)
-                    Image(systemName: symbol)
-                        .font(.system(size: 21, weight: .semibold))
-                        .foregroundStyle(tint)
+            ScrollView {
+                VStack(spacing: 10) {
+                    ZStack {
+                        Circle()
+                            .fill(tint.opacity(0.15))
+                            .frame(width: 46, height: 46)
+                        Image(systemName: symbol)
+                            .font(.system(size: 21, weight: .semibold))
+                            .foregroundStyle(tint)
+                    }
+                    .padding(.bottom, 2)
+                    .accessibilityHidden(true)
+
+                    Text(title)
+                        .font(.system(.title3, weight: .semibold))
+                        .multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .accessibilityAddTraits(.isHeader)
+                        .accessibilityFocused($isTitleFocused)
+
+                    Text(message)
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    details()
                 }
-                .padding(.bottom, 2)
-                .accessibilityHidden(true)
-
-                Text(title)
-                    .font(.system(.title3, weight: .semibold))
-                    .multilineTextAlignment(.center)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .accessibilityAddTraits(.isHeader)
-                    .accessibilityFocused($isTitleFocused)
-
-                Text(message)
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-                    .fixedSize(horizontal: false, vertical: true)
-
-                details()
+                .padding(.horizontal, 22)
+                .padding(.top, 24)
+                .padding(.bottom, 20)
+                .background {
+                    GeometryReader { proxy in
+                        Color.clear.preference(
+                            key: DialogContentHeightKey.self,
+                            value: proxy.size.height
+                        )
+                    }
+                }
             }
-            .padding(.horizontal, 22)
-            .padding(.top, 24)
-            .padding(.bottom, 20)
+            .frame(height: contentHeight > 0 ? min(contentHeight, dialogMaxContentHeight) : nil)
+            .scrollBounceBehavior(.basedOnSize)
+            .onPreferenceChange(DialogContentHeightKey.self) { height in
+                var transaction = Transaction()
+                transaction.disablesAnimations = true
+                withTransaction(transaction) { contentHeight = height }
+            }
 
             Divider()
 
@@ -91,6 +111,14 @@ extension PanelDialog where Details == EmptyView {
             details: { EmptyView() },
             actions: actions
         )
+    }
+}
+
+private struct DialogContentHeightKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = max(value, nextValue())
     }
 }
 

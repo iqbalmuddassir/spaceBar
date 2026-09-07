@@ -64,6 +64,7 @@
 		DCFA4C1D3947D86853EBB232 /* SettingsEffectTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 965F6731015EB50BFC4D6CA6 /* SettingsEffectTests.swift */; };
 		E22CB390C66FA86A7D513091 /* ReclaimRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EEEE205047BDE7C5C8F764AC /* ReclaimRowView.swift */; };
 		E5575CCBD79A603E5F1FB316 /* CommandSizeEstimator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9DDF70B8C233590CEB4568C2 /* CommandSizeEstimator.swift */; };
+		EF01DDAAFE53FBC4ADC5855F /* SettingsCatalogFixtures.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB8F80EB37A5272EAC531BFF /* SettingsCatalogFixtures.swift */; };
 		F12C2DCCEF4A6D4ADA086B38 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 09671CEDD8638D2719F98666 /* Assets.xcassets */; };
 		F21E63A1AC0C755B8612DC32 /* SpaceBarApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2E384D077136B804F28F58F /* SpaceBarApp.swift */; };
 		FCF535FD7E86DA51E75D5B21 /* DeletePathGuard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 656E1049AE27D1A8F42F4570 /* DeletePathGuard.swift */; };
@@ -136,6 +137,7 @@
 		B9AF4B5B95ABFE607E6348BE /* PanelDialog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PanelDialog.swift; sourceTree = "<group>"; };
 		C61C85A27A26C2B7EC9AA93F /* ReviewableFilesBrowserView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewableFilesBrowserView.swift; sourceTree = "<group>"; };
 		C7D335FA3D58AC8112CE9F62 /* CleanupStore+Selection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CleanupStore+Selection.swift"; sourceTree = "<group>"; };
+		DB8F80EB37A5272EAC531BFF /* SettingsCatalogFixtures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsCatalogFixtures.swift; sourceTree = "<group>"; };
 		DD6CAB50A2D1318DF14FF4B5 /* CleanTargetRegistry+SystemCleanup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CleanTargetRegistry+SystemCleanup.swift"; sourceTree = "<group>"; };
 		E4A2738D21EBC04A050594C4 /* TreemapLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TreemapLayout.swift; sourceTree = "<group>"; };
 		E4A50D9B38CFA3C2F6AD4DAA /* CleanerService+SystemSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CleanerService+SystemSettings.swift"; sourceTree = "<group>"; };
@@ -219,6 +221,7 @@
 		5CC89E6F5D557E39AB9C3632 /* Support */ = {
 			isa = PBXGroup;
 			children = (
+				DB8F80EB37A5272EAC531BFF /* SettingsCatalogFixtures.swift */,
 				551B418B4C7FD46FEF23E41C /* SnapshotExport.swift */,
 				83E86BAA7AEA14AD1164F5DA /* SnapshotFixtures.swift */,
 			);
@@ -491,6 +494,7 @@
 				4EA34F75EC2780EEEF705C90 /* DeletePathGuardTests.swift in Sources */,
 				7824E72E8D7B400A50F728B1 /* PanelSnapshotTests.swift in Sources */,
 				71A249363ECCCF51B7300CF0 /* SelectionSafetyTests.swift in Sources */,
+				EF01DDAAFE53FBC4ADC5855F /* SettingsCatalogFixtures.swift in Sources */,
 				DCFA4C1D3947D86853EBB232 /* SettingsEffectTests.swift in Sources */,
 				A5B28D91F1F470CAF2161EBC /* SettingsSnapshotTests.swift in Sources */,
 				FFE2436138C095302FEC16F3 /* SnapshotExport.swift in Sources */,
