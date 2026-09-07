@@ -33,6 +33,7 @@ final class SettingsSnapshotTests: XCTestCase {
         let settings = SnapshotFixtures.settings()
         let monitor = SnapshotFixtures.diskMonitor(for: .good, settings: settings)
         let root = PanelSettingsView { }
+            .environment(\.cleanTargetCatalog, SnapshotFixtures.settingsTargets)
             .environmentObject(settings)
             .environmentObject(monitor)
             .frame(width: SnapshotFixtures.panelSize.width, height: SnapshotFixtures.panelSize.height)
@@ -50,6 +51,7 @@ final class SettingsSnapshotTests: XCTestCase {
         let settings = SnapshotFixtures.settings()
         let monitor = SnapshotFixtures.diskMonitor(for: .good, settings: settings)
         let root = tab
+            .environment(\.cleanTargetCatalog, SnapshotFixtures.settingsTargets)
             .environmentObject(settings)
             .environmentObject(monitor)
             .padding(16)

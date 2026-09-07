@@ -118,7 +118,7 @@ struct BatchCleanConfirmOverlay: View {
     private var strongWarnings: [String] {
         targets
             .filter { $0.target.requiresStrongConfirm || $0.target.isPermanent }
-            .map(\.target.confirmationMessage)
+            .map(\.target.batchConfirmationWarning)
     }
 
     var body: some View {
@@ -133,6 +133,23 @@ struct BatchCleanConfirmOverlay: View {
                     ? "Frees \(ByteFormatting.string(from: totalBytes))"
                     : "Selected items will be removed permanently"
             ) {
+                if hasStrongConfirm {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("These deletes are permanent and cannot be undone:")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.red)
+                            .fixedSize(horizontal: false, vertical: true)
+                        ForEach(Array(strongWarnings.enumerated()), id: \.offset) { _, warning in
+                            Text(warning)
+                                .font(.caption)
+                                .foregroundStyle(.red.opacity(0.85))
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+                    .padding(.top, 2)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+
                 VStack(alignment: .leading, spacing: 5) {
                     ForEach(targets) { result in
                         HStack(spacing: 8) {
@@ -149,18 +166,6 @@ struct BatchCleanConfirmOverlay: View {
                 }
                 .padding(.top, 2)
                 .frame(maxWidth: .infinity, alignment: .leading)
-
-                if hasStrongConfirm {
-                    VStack(alignment: .leading, spacing: 6) {
-                        ForEach(Array(strongWarnings.enumerated()), id: \.offset) { _, warning in
-                            Text(warning)
-                                .font(.caption)
-                                .foregroundStyle(.red)
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                }
             } actions: {
                 DialogButton(title: "Cancel", action: onCancel)
                     .keyboardShortcut(.cancelAction)
